@@ -1,8 +1,19 @@
+export interface Credentials {
+  username: string;
+  password: string;
+}
+
+export interface AuthResponse {
+  token: string;
+  user: Player;
+}
+
 export interface Player {
   id: string;
   username: string;
   rank: string;
   avatar: string;
+  email?: string;
 }
 
 export interface Team {
