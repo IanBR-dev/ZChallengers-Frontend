@@ -1,0 +1,13 @@
+overwrite: true
+schema: "http://localhost:3000/graphql" # Cambia la URL si tu servidor GraphQL está en otro dominio
+documents: 
+  - "src/app/graphql/*.graphql.ts" # Ruta donde están tus consultas/mutaciones GraphQL
+generates:
+  src/app/generated/graphql.ts: # Archivo donde se generarán los tipos y servicios
+    plugins:
+      - "typescript"
+      - "typescript-operations"
+      - "typescript-apollo-angular"
+    config:
+      addExplicitOverride: true
+      skipTypename: true # Opcional: evita añadir '__typename' automáticamente

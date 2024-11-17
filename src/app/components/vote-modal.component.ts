@@ -133,13 +133,13 @@ export class VoteModalComponent {
               Math.floor(Math.random() * this.opposingTeam.players.length)
             ];
 
-          this.votes = [
+   /*        this.votes = [
             ...this.votes,
             {
               fromPlayer: player,
               forPlayer: randomPlayer,
             },
-          ];
+          ]; */
         });
 
         this.isVotingComplete = true;

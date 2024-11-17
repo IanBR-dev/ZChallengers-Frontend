@@ -11,6 +11,7 @@ import { MatchFoundComponent } from './match-found.component';
 import { Subscription } from 'rxjs';
 import { TeamFoundComponent } from './team-found.component';
 import { VoteModalComponent } from './vote-modal.component';
+import { AuthService } from '../services/auth.service';
 
 @Component({
   selector: 'app-lobby',
@@ -212,7 +213,7 @@ import { VoteModalComponent } from './vote-modal.component';
   `,
 })
 export class LobbyComponent implements OnInit, OnDestroy {
-  currentPlayer: Player;
+  currentPlayer!: Player;
   currentTeam: Team | null = null;
   invitations: Invitation[] = [];
   sidebarExpanded = false;
@@ -230,20 +231,23 @@ export class LobbyComponent implements OnInit, OnDestroy {
   currentVotes: Vote[] = [];
 
   constructor(
+    private authService: AuthService,
     private gameService: GameService,
     private queueService: QueueService
-  ) {
-    this.currentPlayer = this.gameService.getCurrentPlayer();
-  }
+  ) {}
 
   ngOnInit() {
     this.requestNotificationPermission();
     this.subscriptions.push(
+      this.authService.getCurrentUser().subscribe((user) => {
+        this.currentPlayer = user;
+      }),
+
       this.gameService.getCurrentTeam().subscribe((team) => {
         this.currentTeam = team;
       }),
 
-      this.gameService.getInvitations().subscribe((invitations) => {
+      this.gameService.getPendingInvitations().subscribe((invitations) => {
         this.invitations = invitations;
       }),
 
@@ -251,7 +255,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
         this.availableTeams = teams;
       }),
 
-      this.queueService.getMatchFound().subscribe((match) => {
+/*       this.queueService.getMatchFound().subscribe((match) => {
         this.matchFound = match;
       }),
       this.queueService.getMatchFound().subscribe((match) => {
@@ -259,13 +263,13 @@ export class LobbyComponent implements OnInit, OnDestroy {
       }),
       this.gameService.getTeamChallenges().subscribe((team) => {
         this.challengingTeam = team;
-      })
+      }) */
     );
 
     // Simulate available players
-    this.availablePlayers = Array(5)
+/*     this.availablePlayers = Array(5)
       .fill(0)
-      .map(() => this.gameService.generateRandomPlayer());
+      .map(() => this.gameService.generateRandomPlayer()); */
   }
 
   private async requestNotificationPermission() {
@@ -323,7 +327,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   leaveTeam() {
-    this.gameService.leaveTeam();
+    // this.gameService.leaveTeam();
   }
 
   openChallengeModal(team: Team) {
@@ -331,7 +335,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   confirmChallenge(team: Team) {
-    this.gameService.challengeTeam(team);
+    // this.gameService.challengeTeam(team);
     this.selectedTeam = null;
   }
 
@@ -341,12 +345,12 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   acceptMatch() {
     if (this.matchFound) {
-      this.queueService.acceptMatch(this.matchFound);
+      // this.queueService.acceptMatch(this.matchFound);
     }
   }
 
   declineMatch() {
-    this.queueService.declineMatch();
+    // this.queueService.declineMatch();
   }
 
   openProfile() {
@@ -367,12 +371,12 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   acceptQueueMatch() {
     if (this.queueMatch) {
-      this.queueService.acceptMatch(this.queueMatch);
+      // this.queueService.acceptMatch(this.queueMatch);
     }
   }
 
   declineQueueMatch() {
-    this.queueService.declineMatch();
+    // this.queueService.declineMatch();
   }
 
   onMatchComplete(opposingTeam: Team) {
@@ -382,11 +386,11 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   onVoteSubmitted(player: Player) {
-    const vote: Vote = {
-      fromPlayer: this.gameService.getCurrentPlayer(),
+/*     const vote: Vote = {
+      fromPlayer: this.currentPlayer,
       forPlayer: player,
-    };
-    this.currentVotes = [...this.currentVotes, vote];
+    }; */
+    // this.currentVotes = [...this.currentVotes, vote];
   }
 
   onVotingComplete() {

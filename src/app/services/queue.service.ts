@@ -1,48 +1,55 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Player, QueueMatch } from '../models/types';
-import { GameService } from './game.service';
+import { filter, map, tap } from 'rxjs/operators';
+import {
+  JoinQueueGQL,
+  LeaveQueueGQL,
+  QueueStatusGQL,
+  QueueStatusSubscription,
+} from '../generated/graphql';
 
 @Injectable({
   providedIn: 'root',
 })
 export class QueueService {
-  private matchFoundSubject = new BehaviorSubject<QueueMatch | null>(null);
-  private queueTimeoutId: any;
+  private queueStatusSubject = new BehaviorSubject<any>(null);
 
-  constructor(private gameService: GameService) {}
+  constructor(
+    private joinQueueGQL: JoinQueueGQL,
+    private leaveQueueGQL: LeaveQueueGQL,
+    private queueStatusGQL: QueueStatusGQL
+  ) {}
 
-  joinQueue() {
-    // Simulate finding a match after random time (5-15 seconds)
-    const timeout = Math.random() * 1000 + 2000;
-    this.queueTimeoutId = setTimeout(() => {
-      const match: QueueMatch = {
-        player1: this.gameService.getCurrentPlayer(),
-        player2: this.gameService.generateRandomPlayer(),
-        timestamp: new Date(),
-      };
-      this.matchFoundSubject.next(match);
-    }, timeout);
+  joinQueue(): Observable<any> {
+    return this.joinQueueGQL.mutate().pipe(
+      tap(() => {
+        console.log('Joined queue');
+      })
+    );
   }
 
-  leaveQueue() {
-    if (this.queueTimeoutId) {
-      clearTimeout(this.queueTimeoutId);
-    }
-    this.matchFoundSubject.next(null);
+  leaveQueue(): Observable<any> {
+    return this.leaveQueueGQL.mutate().pipe(
+      tap(() => {
+        console.log('Left queue');
+      })
+    );
   }
 
-  getMatchFound(): Observable<QueueMatch | null> {
-    return this.matchFoundSubject.asObservable();
+  getQueueStatus(): Observable<QueueStatusSubscription['queueStatus']> {
+    return this.queueStatusGQL.subscribe().pipe(
+      map((result) => result.data?.queueStatus),
+      filter(
+        (queueStatus): queueStatus is NonNullable<typeof queueStatus> =>
+          !!queueStatus
+      ), // Filtra valores nulos/indefinidos
+      tap((queueStatus) => {
+        this.queueStatusSubject.next(queueStatus);
+      })
+    );
   }
 
-  acceptMatch(match: QueueMatch) {
-    // Create team with matched players
-    this.gameService.createTeam([match.player1, match.player2]);
-    this.matchFoundSubject.next(null);
-  }
-
-  declineMatch() {
-    this.matchFoundSubject.next(null);
+  observeQueueStatus(): Observable<any> {
+    return this.queueStatusSubject.asObservable();
   }
 }
