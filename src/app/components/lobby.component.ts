@@ -1,26 +1,11 @@
-import {
-  Component,
-  OnInit,
-  OnDestroy,
-  OnChanges,
-  SimpleChanges,
-} from '@angular/core';
+import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameService } from '../services/game.service';
-import { QueueService } from '../services/queue.service';
-import {
-  Player,
-  Team,
-  QueueMatch,
-  Invitation,
-  Vote,
-  Match,
-} from '../models/types';
+import { Player, Team, Invitation, Vote, Match } from '../models/types';
 import { SidebarComponent } from './sidebar.component';
 import { ChallengeModalComponent } from './challenge-modal.component';
 import { QueueComponent } from './queue.component';
-import { MatchFoundComponent } from './match-found.component';
 import { firstValueFrom, Subscription, take } from 'rxjs';
 import { TeamFoundComponent } from './team-found.component';
 import { VoteModalComponent } from './vote-modal.component';
@@ -30,7 +15,6 @@ import { InvitationsService } from '../services/invitations.service';
 import { MatchesService } from '../services/matches.service';
 import { TeamChallengeComponent } from './team-challenge.component';
 import { MatchStatusComponent } from './match-status.component';
-import { MatchStatus } from '../generated/graphql';
 
 @Component({
   selector: 'app-lobby',
@@ -68,6 +52,7 @@ import { MatchStatus } from '../generated/graphql';
       <app-vote-modal
         *ngIf="showVoting"
         [canVote]="canVote"
+        [myVote]="myVote"
         [opposingTeam]="lastOpposingTeam!"
         [currentTeam]="currentTeam!"
         [votes]="currentVotes"
@@ -262,6 +247,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   lastOpposingTeam: Team | null = null;
   currentVotes: Vote[] | null | undefined = null;
   canVote = false;
+  myVote: Vote | undefined = undefined;
 
   private getAvailablePlayersSubscription: Subscription[] = [];
   private getAvailableTeamSubscription: Subscription[] = [];
@@ -277,22 +263,35 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   async ngOnInit() {
     this.requestNotificationPermission();
-    this.currentPlayer = await firstValueFrom(
-      this.authService.getCurrentUser()
-    );
-    await this.getCurrentTeam();
+    await this.setDataPlayer();
     this.subscriptions.push(
       this.invitationsService.getInvitations().subscribe((invitation) => {
         if (
           invitation.status === 'PENDING' &&
           invitation.to.id === this.currentPlayer.id
         ) {
+          const expirationTime =
+            new Date(invitation.expiresAt).getTime() - Date.now();
           this.invitations.push(invitation);
+          // Calcular el tiempo restante hasta que expire la invitación
+
+          // Asegurarnos de que el tiempo sea positivo antes de configurar el setTimeout
+          if (expirationTime > 0) {
+            setTimeout(() => {
+              this.invitations = this.invitations.filter(
+                (inv) => inv.id !== invitation.id
+              );
+            }, expirationTime);
+          }
         }
+
         if (invitation.status === 'ACCEPTED') {
-          this.invitations.filter((inv) => inv.id !== invitation.id);
+          this.invitations = this.invitations.filter(
+            (inv) => inv.id !== invitation.id
+          );
           this.getCurrentTeam();
         }
+
         if (invitation.status === 'DECLINED') {
           this.invitations = this.invitations.filter(
             (inv) => inv.id !== invitation.id
@@ -300,6 +299,18 @@ export class LobbyComponent implements OnInit, OnDestroy {
         }
       })
     );
+  }
+
+  async setDataPlayer() {
+    this.currentPlayer = await firstValueFrom(
+      this.authService.getCurrentUser()
+    );
+    this.currentTeam = this.currentPlayer.team;
+    this.currentTeam ? this.initAvailableTeams() : this.initAvailablePlayers();
+    const myMatch = await firstValueFrom(this.matchesService.getMyMatch());
+    if (myMatch) {
+      this.setMatch(myMatch);
+    }
   }
 
   private async requestNotificationPermission() {
@@ -312,51 +323,132 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   ngOnDestroy() {
     this.subscriptions.forEach((sub) => sub.unsubscribe());
+    this.getAvailablePlayersSubscription.forEach((sub) => sub.unsubscribe());
+    this.getAvailableTeamSubscription.forEach((sub) => sub.unsubscribe());
+    this.matchSubscription.forEach((sub) => sub.unsubscribe());
+  }
+
+  async setMatch(match: Match) {
+    this.match = match;
+    if (match.status === 'VOTING') {
+      if (match.status === 'VOTING' && match.winner && match.votes) {
+        const team1 = match.team1;
+        const team2 = match.team2;
+        const winnerTeam = match.winner.id;
+        const losserTeam = winnerTeam === team1.id ? team2 : team1;
+        if (winnerTeam === this.currentTeam?.id) {
+          this.canVote = true;
+        }
+        this.myVote = match.votes.find(
+          (v) => v.fromPlayer.id === this.currentPlayer.id
+        );
+        if (match.votes?.length > 0) {
+          this.currentVotes = match.votes;
+        }
+        this.onMatchComplete(losserTeam);
+      }
+    }
+  }
+
+  async initAvailablePlayers() {
+    await this.getAvailableTeamSub();
+    await this.getAvailablePlayers();
+    this.getAvailablePlayerSub(true);
   }
 
   async getCurrentTeam(): Promise<void> {
-    if (!this.currentTeam) {
-      this.currentTeam = await firstValueFrom(
-        this.teamsService.getCurrentTeam()
-      );
-      this.getAvailablePlayersSubscription.push(
-        this.gameService.getAvailablePlayers().subscribe((players: any) => {
-          this.availablePlayers = players.filter(
-            (player: any) => player.id !== this.currentPlayer.id
-          );
-        })
-      );
-    }
-    if (this.currentTeam) {
-      this.getAvailableTeams();
-      this.getAvailableTeamSub(true);
-      this.getMatchSub(true);
-    }
+    this.currentTeam = await firstValueFrom(this.teamsService.getCurrentTeam());
+    this.initAvailableTeams();
+  }
+
+  async initAvailableTeams() {
+    await this.getAvailablePlayerSub();
+    await this.getAvailableTeams();
+    this.getAvailableTeamSub(true);
+    this.getMatchSub(true);
   }
 
   async teamFounded(team: Team) {
     this.currentTeam = team;
-    this.getAvailablePlayersSubscription.forEach((sub) => sub.unsubscribe());
+    this.initAvailableTeams();
   }
 
   async getAvailableTeams() {
-    this.availableTeams = [
-      ...(await firstValueFrom(this.teamsService.getAvailableTeams())),
-    ];
+    if (this.currentTeam) {
+      const availableTeams = [
+        ...(await firstValueFrom(this.teamsService.getAvailableTeams())),
+      ];
+      // Eliminar mi equipo
+      const myTeam = this.currentTeam?.id;
+      this.availableTeams = availableTeams.filter((t) => t.id !== myTeam);
+    } else {
+      this.availableTeams = [];
+    }
   }
 
   async getAvailableTeamSub(sub?: boolean) {
     if (sub) {
       this.getAvailableTeamSubscription.push(
         this.teamsService.getAvailableTeam().subscribe((team) => {
-          if (team.status === 'available') {
-            this.availableTeams.push(team);
+          // Actualizar mi equipo si es el actual
+          if (team.id === this.currentTeam?.id && team.players.length > 1) {
+            this.currentTeam = team;
+
+            // Si mi equipo cambia, eliminar equipos que no tengan el mismo tamaño
+            this.getAvailableTeams();
+            return; // Salimos porque no queremos agregar mi equipo a la lista
           }
-          if (team.status === 'in-match') {
+
+          // Verificar si el equipo ya existe en la lista
+          const teamIndex = this.availableTeams.findIndex(
+            (t) => t.id === team.id
+          );
+
+          if (team.status === 'available') {
+            if (team.players.length === this.currentTeam?.players.length) {
+              if (teamIndex !== -1) {
+                // Si el equipo ya existe, comparar jugadores
+                const existingTeam = this.availableTeams[teamIndex];
+                const samePlayers =
+                  existingTeam.players.length === team.players.length &&
+                  existingTeam.players.every(
+                    (p, idx) => p.id === team.players[idx].id
+                  );
+
+                if (!samePlayers) {
+                  // Si los datos son diferentes, actualizar
+                  this.availableTeams[teamIndex] = team;
+                }
+              } else {
+                // Si no existe, agregarlo
+                this.availableTeams.push(team);
+              }
+            } else {
+              // Si el tamaño de jugadores es diferente, eliminar el equipo de la lista
+              if (teamIndex !== -1) {
+                this.availableTeams.splice(teamIndex, 1);
+              }
+            }
+          } else if (
+            team.status === 'in-match' ||
+            team.status === 'eliminated'
+          ) {
+            // Eliminar equipos en estado in-match o eliminated
             this.availableTeams = this.availableTeams.filter(
               (t) => t.id !== team.id
             );
+
+            if (
+              team.status === 'eliminated' &&
+              this.currentTeam?.id === team.id
+            ) {
+              // Si mi equipo es eliminado, reiniciar la lista y mi equipo
+              this.availableTeams = [];
+              this.currentTeam = null;
+              this.initAvailablePlayers();
+            }
           }
+
         })
       );
     } else {
@@ -368,7 +460,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     if (sub) {
       this.matchSubscription.push(
         this.matchesService.matchStatus().subscribe((match) => {
-          if (match && match.status === MatchStatus.InProgress) {
+          if (match && match.status === 'IN_PROGRESS') {
             const myTeam = this.currentTeam?.id;
             this.challengingTeam = match.team1;
             this.challengedTeam = match.team2;
@@ -383,7 +475,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
           }
           if (
             match &&
-            match.status === MatchStatus.Voting &&
+            match.status === 'VOTING' &&
             match.winner &&
             match.votes &&
             match.votes?.length === 0
@@ -399,13 +491,13 @@ export class LobbyComponent implements OnInit, OnDestroy {
           }
           if (
             match &&
-            match.status === MatchStatus.Voting &&
+            match.status === 'VOTING' &&
             match.votes &&
             match.votes?.length > 0
           ) {
             this.currentVotes = match.votes;
           }
-          if (match.status === MatchStatus.Completed) {
+          if (match.status === 'COMPLETED') {
             // Refresh my team
             const team1 = match.team1;
             const team2 = match.team2;
@@ -413,12 +505,44 @@ export class LobbyComponent implements OnInit, OnDestroy {
             this.currentTeam = teams.find((team) =>
               team.players.some((player) => player.id === this.currentPlayer.id)
             );
+            if (this.currentTeam?.status === 'eliminated') {
+              this.currentTeam = null;
+            } else {
+              this.getAvailableTeams();
+              this.getAvailableTeamSub(true);
+            }
             this.onVotingComplete();
           }
         })
       );
     } else {
       this.matchSubscription.forEach((sub) => sub.unsubscribe());
+    }
+  }
+
+  async getAvailablePlayers() {
+    this.availablePlayers = [];
+    this.availablePlayers = [
+      ...(await firstValueFrom(this.gameService.getAvailablePlayers())),
+    ];
+  }
+  async getAvailablePlayerSub(sub?: boolean) {
+    if (sub) {
+      this.getAvailablePlayersSubscription.push(
+        this.gameService
+          .getAvailablePlayerSubscription()
+          .subscribe((player) => {
+            if (player.status === 'AVAILABLE') {
+              this.availablePlayers.push(player);
+            } else {
+              this.availablePlayers = this.availablePlayers.filter(
+                (t) => t.id !== player.id
+              );
+            }
+          })
+      );
+    } else {
+      this.getAvailablePlayersSubscription.forEach((sub) => sub.unsubscribe());
     }
   }
 
@@ -471,14 +595,19 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.invitationsService.invitePlayer(id).subscribe();
   }
 
-  leaveTeam() {
-    // this.gameService.leaveTeam();
+  async leaveTeam() {
+    await this.getAvailableTeamSub();
+    this.gameService.leaveTeam().subscribe(async (result) => {
+      if (result) {
+        this.currentTeam = null;
+        this.initAvailablePlayers();
+      }
+    });
   }
 
   async closeModalTeamFound() {
     this.currentTeam = this.teamFound;
     this.teamFound = null;
-    this.getCurrentTeam();
   }
 
   openChallengeModal(team: Team) {
@@ -554,8 +683,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.canVote = false;
     this.match = null;
     this.lastOpposingTeam = null;
-    this.matchSubscription.forEach((sub) => sub.unsubscribe());
-    this.getAvailableTeams();
     this.currentVotes = [];
   }
 }

@@ -2,7 +2,6 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable, map, tap } from 'rxjs';
 import {
   AcceptInvitationGQL,
-  AvailablePlayersSubscription,
   DeclineInvitationGQL,
   InvitationReceivedGQL,
   InvitationReceivedSubscription,

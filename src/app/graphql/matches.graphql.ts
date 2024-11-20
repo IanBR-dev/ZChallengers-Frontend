@@ -68,6 +68,7 @@ export const MATCH_STATUS = gql`
         captain {
           id
         }
+        status
       }
       team2 {
         id
@@ -81,6 +82,7 @@ export const MATCH_STATUS = gql`
         captain {
           id
         }
+        status
       }
       winner {
         id
@@ -101,7 +103,7 @@ export const MATCHES = gql`
   query GetAllMatches {
     getAllMatches {
       id
-      team1 {
+      team1Snapshot {
         id
         name
         players {
@@ -113,7 +115,7 @@ export const MATCHES = gql`
           id
         }
       }
-      team2 {
+      team2Snapshot {
         id
         name
         players {
@@ -126,7 +128,7 @@ export const MATCHES = gql`
         }
       }
       status
-      winner {
+      winnerSnapshot {
         id
       }
     }
@@ -164,6 +166,54 @@ export const UPDATE_MATCH = gql`
         }
       }
       status
+    }
+  }
+`;
+
+export const MY_MATCH = gql`
+  query GetMyMatch {
+    getMyMatch {
+      id
+      status
+      team1 {
+        id
+        name
+        players {
+          id
+          username
+          rank
+          avatar
+        }
+        captain {
+          id
+        }
+        status
+      }
+      team2 {
+        id
+        name
+        players {
+          id
+          username
+          rank
+          avatar
+        }
+        captain {
+          id
+        }
+        status
+      }
+      winner {
+        id
+      }
+      votes {
+        fromPlayer {
+          id
+        }
+        forPlayer {
+          id
+        }
+      }
     }
   }
 `;

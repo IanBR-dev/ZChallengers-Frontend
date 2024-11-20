@@ -2,6 +2,7 @@ import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QueueService } from '../services/queue.service';
 import { Team } from '../models/types';
+import { Subscription } from 'rxjs';
 
 @Component({
   selector: 'app-queue',
@@ -50,15 +51,18 @@ export class QueueComponent implements OnInit {
   private queueStartTime: number = 0;
   private timerInterval: any;
   @Output() teamFounded = new EventEmitter<Team>();
+  private teamFoundSubscription: Subscription[] = [];
 
   constructor(private queueService: QueueService) {}
 
   ngOnInit(): void {
-    this.queueService.teamFound().subscribe((teamfound) => {
-      if (teamfound) {
-        this.teamFounded.emit(teamfound);
-      }
-    });
+    this.teamFoundSubscription.push(
+      this.queueService.teamFound().subscribe((team) => {
+        if (team) {
+          this.teamFounded.emit(team);
+        }
+      })
+    );
   }
 
   startQueue() {
@@ -98,5 +102,6 @@ export class QueueComponent implements OnInit {
     if (this.timerInterval) {
       clearInterval(this.timerInterval);
     }
+    this.teamFoundSubscription.forEach((sub) => sub.unsubscribe());
   }
 }

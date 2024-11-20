@@ -19,7 +19,7 @@ import { Invitation, Player } from '../models/types';
           class="material-symbols-outlined transform transition-transform duration-300"
           [class.rotate-180]="isExpanded"
         >
-          chevron_right
+          chevron_left
         </span>
       </div>
     </div>

@@ -90,3 +90,9 @@ export const GET_AVAILABLE_TEAM = gql`
     }
   }
 `;
+
+export const LEFT_TEAM = gql`
+  mutation LeftTeam {
+    leftTeam
+  }
+`;

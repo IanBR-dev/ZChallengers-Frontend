@@ -1,30 +1,50 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { filter, map, tap } from 'rxjs/operators';
+import { filter, map, take, tap } from 'rxjs/operators';
 import {
-  AvailablePlayersGQL,
-  AvailablePlayersSubscription,
+  AvailablePlayerGQL,
+  AvailablePlayerSubscription,
+  GetAvailablePlayersGQL,
+  LeftTeamGQL,
 } from '../generated/graphql';
 
 @Injectable({
   providedIn: 'root',
 })
 export class GameService {
-  private availablePlayersSubject = new BehaviorSubject<any>(null);
+  constructor(
+    private getAvailablePlayersGQL: GetAvailablePlayersGQL,
+    private availablePlayerGQL: AvailablePlayerGQL,
+    private leftTeamGQL: LeftTeamGQL
+  ) {}
 
-  constructor(private availablePlayersGQL: AvailablePlayersGQL) {}
+  getAvailablePlayers(): Observable<any> {
+    return this.getAvailablePlayersGQL.fetch().pipe(
+      take(1),
+      map((result) => result.data?.getAvailablePlayers),
+      filter((players): players is NonNullable<typeof players> => !!players), // Filtra valores nulos/indefinidos
+      tap((players) => {
+        return players;
+      })
+    );
+  }
 
-  getAvailablePlayers(): Observable<
-    AvailablePlayersSubscription['availablePlayers']
+  getAvailablePlayerSubscription(): Observable<
+    AvailablePlayerSubscription['availablePlayer']
   > {
-    return this.availablePlayersGQL.subscribe().pipe(
-      map((result) => result.data?.availablePlayers),
-      filter(
-        (queueStatus): queueStatus is NonNullable<typeof queueStatus> =>
-          !!queueStatus
-      ), // Filtra valores nulos/indefinidos
-      tap((queueStatus) => {
-        this.availablePlayersSubject.next(queueStatus);
+    return this.availablePlayerGQL.subscribe().pipe(
+      map((result) => result.data?.availablePlayer),
+      filter((player): player is NonNullable<typeof player> => !!player), // Filtra valores nulos/indefinidos
+      tap((player) => {
+        return player;
+      })
+    );
+  }
+
+  leaveTeam(): Observable<any> {
+    return this.leftTeamGQL.mutate().pipe(
+      tap((response) => {
+        return response.data?.leftTeam;
       })
     );
   }

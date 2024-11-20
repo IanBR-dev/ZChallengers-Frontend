@@ -36,11 +36,10 @@ export type CreateTeamInput = {
 };
 
 export type InvitationType = {
-  createdAt: Scalars['DateTime']['output'];
+  expiresAt: Scalars['DateTime']['output'];
   from: User;
   id: Scalars['ID']['output'];
   status: Scalars['String']['output'];
-  team: Team;
   to: User;
 };
 
@@ -49,19 +48,26 @@ export type LoginInput = {
   username: Scalars['String']['input'];
 };
 
-export enum MatchStatus {
-  Completed = 'COMPLETED',
-  InProgress = 'IN_PROGRESS',
-  Voting = 'VOTING'
-}
+export type Match = {
+  team1?: Maybe<Team>;
+  team1Snapshot?: Maybe<TeamSnapshotType>;
+  team2?: Maybe<Team>;
+  team2Snapshot?: Maybe<TeamSnapshotType>;
+  votes?: Maybe<Array<Vote>>;
+  winner?: Maybe<Team>;
+  winnerSnapshot?: Maybe<TeamSnapshotType>;
+};
 
 export type MatchType = {
   id: Scalars['ID']['output'];
-  status: MatchStatus;
+  status: Scalars['String']['output'];
   team1: TeamType;
+  team1Snapshot?: Maybe<TeamSnapshotType>;
   team2: TeamType;
+  team2Snapshot?: Maybe<TeamSnapshotType>;
   votes?: Maybe<Array<VoteType>>;
   winner?: Maybe<TeamType>;
+  winnerSnapshot?: Maybe<TeamSnapshotType>;
 };
 
 export type Mutation = {
@@ -74,6 +80,7 @@ export type Mutation = {
   invitePlayer: InvitationType;
   joinQueue: Scalars['Boolean']['output'];
   leaveQueue: Scalars['Boolean']['output'];
+  leftTeam: Scalars['Boolean']['output'];
   login: AuthResponse;
   register: AuthResponse;
   updateMatch: MatchType;
@@ -133,7 +140,9 @@ export type MutationUpdateTeamArgs = {
 export type Query = {
   currentTeam: TeamType;
   getAllMatches: Array<MatchType>;
+  getAvailablePlayers: Array<UserType>;
   getAvailableTeams: Array<TeamType>;
+  getMyMatch?: Maybe<MatchType>;
   me: UserType;
   pendingInvitations: Array<InvitationType>;
 };
@@ -144,7 +153,7 @@ export type RegisterInput = {
 };
 
 export type Subscription = {
-  availablePlayers: Array<UserType>;
+  availablePlayer: UserType;
   availableTeam: TeamType;
   invitationReceived: InvitationType;
   matchStatus: MatchType;
@@ -156,6 +165,26 @@ export type Team = {
   id: Scalars['ID']['output'];
   name: Scalars['String']['output'];
   players: Array<User>;
+  status: Scalars['String']['output'];
+};
+
+export type TeamSnapshotCaptain = {
+  id: Scalars['String']['output'];
+  username: Scalars['String']['output'];
+};
+
+export type TeamSnapshotPlayer = {
+  avatar?: Maybe<Scalars['String']['output']>;
+  id: Scalars['String']['output'];
+  rank?: Maybe<Scalars['String']['output']>;
+  username: Scalars['String']['output'];
+};
+
+export type TeamSnapshotType = {
+  captain: TeamSnapshotCaptain;
+  id: Scalars['String']['output'];
+  name: Scalars['String']['output'];
+  players: Array<TeamSnapshotPlayer>;
   status: Scalars['String']['output'];
 };
 
@@ -182,8 +211,8 @@ export type UpdateTeamInput = {
 
 export type User = {
   avatar: Scalars['String']['output'];
-  connected: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
+  match?: Maybe<Match>;
   rank: Scalars['String']['output'];
   team?: Maybe<Team>;
   username: Scalars['String']['output'];
@@ -191,11 +220,17 @@ export type User = {
 
 export type UserType = {
   avatar: Scalars['String']['output'];
-  connected: Scalars['Boolean']['output'];
   id: Scalars['ID']['output'];
   rank: Scalars['String']['output'];
-  team: TeamType;
+  status: Scalars['String']['output'];
+  team?: Maybe<TeamType>;
   username: Scalars['String']['output'];
+};
+
+export type Vote = {
+  createdAt: Scalars['DateTime']['output'];
+  forPlayer: User;
+  fromPlayer: User;
 };
 
 export type VoteInput = {
@@ -226,14 +261,14 @@ export type RegisterMutation = { register: { token: string, user: { id: string, 
 export type PendingInvitationsQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type PendingInvitationsQuery = { pendingInvitations: Array<{ id: string, status: string, createdAt: any, from: { id: string, username: string, rank: string, avatar: string }, to: { id: string, username: string, avatar: string } }> };
+export type PendingInvitationsQuery = { pendingInvitations: Array<{ id: string, status: string, expiresAt: any, from: { id: string, username: string, rank: string, avatar: string }, to: { id: string, username: string, avatar: string } }> };
 
 export type InvitePlayerMutationVariables = Exact<{
   playerId: Scalars['String']['input'];
 }>;
 
 
-export type InvitePlayerMutation = { invitePlayer: { id: string, status: string, createdAt: any, from: { id: string, username: string }, to: { id: string, username: string } } };
+export type InvitePlayerMutation = { invitePlayer: { id: string, status: string, expiresAt: any, from: { id: string, username: string }, to: { id: string, username: string } } };
 
 export type AcceptInvitationMutationVariables = Exact<{
   invitationId: Scalars['String']['input'];
@@ -252,14 +287,14 @@ export type DeclineInvitationMutation = { declineInvitation: boolean };
 export type InvitationReceivedSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type InvitationReceivedSubscription = { invitationReceived: { id: string, status: string, createdAt: any, from: { id: string, username: string, avatar: string }, to: { id: string, username: string, avatar: string } } };
+export type InvitationReceivedSubscription = { invitationReceived: { id: string, status: string, expiresAt: any, from: { id: string, username: string, avatar: string }, to: { id: string, username: string, avatar: string } } };
 
 export type CreateMatchMutationVariables = Exact<{
   input: CreateMatchInput;
 }>;
 
 
-export type CreateMatchMutation = { createMatch: { id: string, status: MatchStatus, team1: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, team2: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } } } };
+export type CreateMatchMutation = { createMatch: { id: string, status: string, team1: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, team2: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } } } };
 
 export type CreateVoteMutationVariables = Exact<{
   input: VoteInput;
@@ -271,19 +306,24 @@ export type CreateVoteMutation = { createVote: { id: string, fromPlayer: { id: s
 export type MatchStatusSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MatchStatusSubscription = { matchStatus: { id: string, status: MatchStatus, team1: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, team2: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, winner?: { id: string } | null, votes?: Array<{ fromPlayer: { id: string }, forPlayer: { id: string } }> | null } };
+export type MatchStatusSubscription = { matchStatus: { id: string, status: string, team1: { id: string, name: string, status: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, team2: { id: string, name: string, status: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, winner?: { id: string } | null, votes?: Array<{ fromPlayer: { id: string }, forPlayer: { id: string } }> | null } };
 
 export type GetAllMatchesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetAllMatchesQuery = { getAllMatches: Array<{ id: string, status: MatchStatus, team1: { id: string, name: string, players: Array<{ id: string, username: string, avatar: string }>, captain: { id: string } }, team2: { id: string, name: string, players: Array<{ id: string, username: string, avatar: string }>, captain: { id: string } }, winner?: { id: string } | null }> };
+export type GetAllMatchesQuery = { getAllMatches: Array<{ id: string, status: string, team1Snapshot?: { id: string, name: string, players: Array<{ id: string, username: string, avatar?: string | null }>, captain: { id: string } } | null, team2Snapshot?: { id: string, name: string, players: Array<{ id: string, username: string, avatar?: string | null }>, captain: { id: string } } | null, winnerSnapshot?: { id: string } | null }> };
 
 export type UpdateMatchMutationVariables = Exact<{
   input: UpdateMatchInput;
 }>;
 
 
-export type UpdateMatchMutation = { updateMatch: { id: string, status: MatchStatus, team1: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, team2: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } } } };
+export type UpdateMatchMutation = { updateMatch: { id: string, status: string, team1: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, team2: { id: string, name: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } } } };
+
+export type GetMyMatchQueryVariables = Exact<{ [key: string]: never; }>;
+
+
+export type GetMyMatchQuery = { getMyMatch?: { id: string, status: string, team1: { id: string, name: string, status: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, team2: { id: string, name: string, status: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } }, winner?: { id: string } | null, votes?: Array<{ fromPlayer: { id: string }, forPlayer: { id: string } }> | null } | null };
 
 export type JoinQueueMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -329,15 +369,25 @@ export type AvailableTeamSubscriptionVariables = Exact<{ [key: string]: never; }
 
 export type AvailableTeamSubscription = { availableTeam: { id: string, name: string, status: string, players: Array<{ id: string, username: string, rank: string, avatar: string }>, captain: { id: string } } };
 
+export type LeftTeamMutationVariables = Exact<{ [key: string]: never; }>;
+
+
+export type LeftTeamMutation = { leftTeam: boolean };
+
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { me: { id: string, username: string, rank: string, avatar: string } };
+export type MeQuery = { me: { id: string, username: string, rank: string, avatar: string, team?: { id: string, name: string, captain: { id: string }, players: Array<{ id: string, avatar: string, username: string, rank: string }> } | null } };
 
-export type AvailablePlayersSubscriptionVariables = Exact<{ [key: string]: never; }>;
+export type GetAvailablePlayersQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AvailablePlayersSubscription = { availablePlayers: Array<{ id: string, username: string, rank: string, avatar: string }> };
+export type GetAvailablePlayersQuery = { getAvailablePlayers: Array<{ id: string, username: string, rank: string, avatar: string, status: string }> };
+
+export type AvailablePlayerSubscriptionVariables = Exact<{ [key: string]: never; }>;
+
+
+export type AvailablePlayerSubscription = { availablePlayer: { id: string, username: string, rank: string, avatar: string, status: string } };
 
 export type DisconnectMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -408,7 +458,7 @@ export const PendingInvitationsDocument = gql`
       avatar
     }
     status
-    createdAt
+    expiresAt
   }
 }
     `;
@@ -436,7 +486,7 @@ export const InvitePlayerDocument = gql`
       username
     }
     status
-    createdAt
+    expiresAt
   }
 }
     `;
@@ -498,7 +548,7 @@ export const InvitationReceivedDocument = gql`
       avatar
     }
     status
-    createdAt
+    expiresAt
   }
 }
     `;
@@ -601,6 +651,7 @@ export const MatchStatusDocument = gql`
       captain {
         id
       }
+      status
     }
     team2 {
       id
@@ -614,6 +665,7 @@ export const MatchStatusDocument = gql`
       captain {
         id
       }
+      status
     }
     winner {
       id
@@ -644,7 +696,7 @@ export const GetAllMatchesDocument = gql`
     query GetAllMatches {
   getAllMatches {
     id
-    team1 {
+    team1Snapshot {
       id
       name
       players {
@@ -656,7 +708,7 @@ export const GetAllMatchesDocument = gql`
         id
       }
     }
-    team2 {
+    team2Snapshot {
       id
       name
       players {
@@ -669,7 +721,7 @@ export const GetAllMatchesDocument = gql`
       }
     }
     status
-    winner {
+    winnerSnapshot {
       id
     }
   }
@@ -726,6 +778,64 @@ export const UpdateMatchDocument = gql`
   })
   export class UpdateMatchGQL extends Apollo.Mutation<UpdateMatchMutation, UpdateMatchMutationVariables> {
     override document = UpdateMatchDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const GetMyMatchDocument = gql`
+    query GetMyMatch {
+  getMyMatch {
+    id
+    status
+    team1 {
+      id
+      name
+      players {
+        id
+        username
+        rank
+        avatar
+      }
+      captain {
+        id
+      }
+      status
+    }
+    team2 {
+      id
+      name
+      players {
+        id
+        username
+        rank
+        avatar
+      }
+      captain {
+        id
+      }
+      status
+    }
+    winner {
+      id
+    }
+    votes {
+      fromPlayer {
+        id
+      }
+      forPlayer {
+        id
+      }
+    }
+  }
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class GetMyMatchGQL extends Apollo.Query<GetMyMatchQuery, GetMyMatchQueryVariables> {
+    override document = GetMyMatchDocument;
     
     constructor(apollo: Apollo.Apollo) {
       super(apollo);
@@ -932,6 +1042,22 @@ export const AvailableTeamDocument = gql`
       super(apollo);
     }
   }
+export const LeftTeamDocument = gql`
+    mutation LeftTeam {
+  leftTeam
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class LeftTeamGQL extends Apollo.Mutation<LeftTeamMutation, LeftTeamMutationVariables> {
+    override document = LeftTeamDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
 export const MeDocument = gql`
     query Me {
   me {
@@ -939,6 +1065,19 @@ export const MeDocument = gql`
     username
     rank
     avatar
+    team {
+      id
+      name
+      captain {
+        id
+      }
+      players {
+        id
+        avatar
+        username
+        rank
+      }
+    }
   }
 }
     `;
@@ -953,13 +1092,14 @@ export const MeDocument = gql`
       super(apollo);
     }
   }
-export const AvailablePlayersDocument = gql`
-    subscription AvailablePlayers {
-  availablePlayers {
+export const GetAvailablePlayersDocument = gql`
+    query getAvailablePlayers {
+  getAvailablePlayers {
     id
     username
     rank
     avatar
+    status
   }
 }
     `;
@@ -967,8 +1107,30 @@ export const AvailablePlayersDocument = gql`
   @Injectable({
     providedIn: 'root'
   })
-  export class AvailablePlayersGQL extends Apollo.Subscription<AvailablePlayersSubscription, AvailablePlayersSubscriptionVariables> {
-    override document = AvailablePlayersDocument;
+  export class GetAvailablePlayersGQL extends Apollo.Query<GetAvailablePlayersQuery, GetAvailablePlayersQueryVariables> {
+    override document = GetAvailablePlayersDocument;
+    
+    constructor(apollo: Apollo.Apollo) {
+      super(apollo);
+    }
+  }
+export const AvailablePlayerDocument = gql`
+    subscription AvailablePlayer {
+  availablePlayer {
+    id
+    username
+    rank
+    avatar
+    status
+  }
+}
+    `;
+
+  @Injectable({
+    providedIn: 'root'
+  })
+  export class AvailablePlayerGQL extends Apollo.Subscription<AvailablePlayerSubscription, AvailablePlayerSubscriptionVariables> {
+    override document = AvailablePlayerDocument;
     
     constructor(apollo: Apollo.Apollo) {
       super(apollo);

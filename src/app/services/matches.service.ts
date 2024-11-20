@@ -3,6 +3,7 @@ import {
   CreateMatchGQL,
   CreateVoteGQL,
   GetAllMatchesGQL,
+  GetMyMatchGQL,
   MatchStatusGQL,
   MatchStatusSubscription,
   UpdateMatchGQL,
@@ -18,7 +19,8 @@ export class MatchesService {
     private matchStatusGQL: MatchStatusGQL,
     private getAllMatchesGQL: GetAllMatchesGQL,
     private updateMatchGQL: UpdateMatchGQL,
-    private createVoteGQL: CreateVoteGQL
+    private createVoteGQL: CreateVoteGQL,
+    private getMyMatchGQL: GetMyMatchGQL
   ) {}
 
   getMatches(): Observable<any> {
@@ -64,6 +66,15 @@ export class MatchesService {
     return this.createVoteGQL.mutate({ input }).pipe(
       tap((response) => {
         return response.data?.createVote;
+      })
+    );
+  }
+
+  getMyMatch() {
+    return this.getMyMatchGQL.fetch().pipe(
+      map((result) => result.data?.getMyMatch),
+      tap((match) => {
+        return match;
       })
     );
   }

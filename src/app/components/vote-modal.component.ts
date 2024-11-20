@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Team, Player, Vote } from '../models/types';
 
@@ -107,7 +107,7 @@ import { Team, Player, Vote } from '../models/types';
     `,
   ],
 })
-export class VoteModalComponent {
+export class VoteModalComponent implements OnInit {
   @Input() opposingTeam!: Team;
   @Input() currentTeam!: Team;
   @Input() votes: Vote[] | null | undefined = null;
@@ -119,6 +119,19 @@ export class VoteModalComponent {
   hasVoted = false;
   isVotingComplete = false;
   winningPlayer: Player | null = null;
+
+  @Input() myVote: Vote | undefined = undefined;
+
+  ngOnInit(): void {
+    if (this.votes && this.votes?.length > 0) {
+      this.myVote ? (this.hasVoted = true) : (this.hasVoted = false);
+      this.opposingTeam.players.forEach((player) => {
+        if (player.id === this.myVote?.forPlayer.id) {
+          this.selectedPlayer = player;
+        }
+      });
+    }
+  }
 
   selectPlayer(player: Player) {
     if (!this.hasVoted && this.canVote) {

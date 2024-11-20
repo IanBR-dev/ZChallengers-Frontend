@@ -1,5 +1,3 @@
-import { MatchStatus } from '../generated/graphql';
-
 export interface Credentials {
   username: string;
   password: string;
@@ -11,7 +9,7 @@ export interface AuthResponse {
 }
 
 export interface Player {
-  id?: string;
+  id: string;
   username: string;
   rank?: string;
   avatar?: string;
@@ -38,7 +36,8 @@ export interface Invitation {
   from: Player; // El backend devuelve todos los campos de "Player" para "from"
   to: Player; // Solo incluye las propiedades devueltas por el backend
   status: string; // Cambiar a "string" si no puedes garantizar los valores fijos
-  createdAt: Date; // Mantener como Date
+  expiresAt: Date; // Mantener como Date
+  expiresNumber?: number;
 }
 
 export interface QueueMatch {
@@ -63,11 +62,13 @@ export interface Vote {
 
 export interface Match {
   id: string; // ID único del partido
-  status: MatchStatus; // Estado del partido
+  status: string; // Estado del partido
   team1: Team; // Equipo 1
   team2: Team; // Equipo 2
   votes?: Voted[] | null; // Votos emitidos
   winner?: { id: string } | null; // Equipo ganador
+  team1Snapshot?: Team; // Equipo 1
+  team2Snapshot?: Team; // Equipo 2
 }
 
 interface Voted {

@@ -59,16 +59,20 @@ import { MatchesService } from '../../services/matches.service';
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 flex-shrink-0">
                   <img
-                    [src]="match.team1.players[0].avatar"
+                    *ngIf="
+                      match.team1Snapshot &&
+                      match.team1Snapshot.players.length > 0
+                    "
+                    [src]="match.team1Snapshot.players[0].avatar"
                     class="w-full h-full rounded-full"
                   />
                 </div>
                 <div class="flex-1">
                   <div class="text-white font-medium">
-                    {{ match.team1.name }}
+                    {{ match.team1Snapshot?.name }}
                   </div>
                   <div class="text-sm text-gray-400">
-                    {{ match.team1.players.length }} players
+                    {{ match.team1Snapshot?.players?.length }} players
                   </div>
                 </div>
               </div>
@@ -80,16 +84,20 @@ import { MatchesService } from '../../services/matches.service';
               <div class="flex items-center gap-2">
                 <div class="w-8 h-8 flex-shrink-0">
                   <img
-                    [src]="match.team2.players[0].avatar"
+                    *ngIf="
+                      match.team2Snapshot &&
+                      match.team2Snapshot.players.length > 0
+                    "
+                    [src]="match.team2Snapshot.players[0].avatar"
                     class="w-full h-full rounded-full"
                   />
                 </div>
                 <div class="flex-1">
                   <div class="text-white font-medium">
-                    {{ match.team2.name }}
+                    {{ match.team2Snapshot?.name }}
                   </div>
                   <div class="text-sm text-gray-400">
-                    {{ match.team2.players.length }} players
+                    {{ match.team2Snapshot?.players?.length }} players
                   </div>
                 </div>
               </div>
@@ -113,9 +121,10 @@ import { MatchesService } from '../../services/matches.service';
       </button>
 
       <app-admin-match-status
+        *ngIf="selectedMatch.team1Snapshot && selectedMatch.team2Snapshot"
         [matchId]="selectedMatch.id"
-        [team1]="selectedMatch.team1"
-        [team2]="selectedMatch.team2"
+        [team1Snapshot]="selectedMatch.team1Snapshot"
+        [team2Snapshot]="selectedMatch.team2Snapshot"
         (declareWinner)="openConfirmModal($event)"
       ></app-admin-match-status>
     </div>
@@ -173,16 +182,16 @@ export class AdminMatchListComponent implements OnInit {
       const matchesSearch =
         !this.searchQuery ||
         match.id.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
-        match.team1.name
+        match.team1Snapshot?.name
           .toLowerCase()
           .includes(this.searchQuery.toLowerCase()) ||
-        match.team2.name
+        match.team2Snapshot?.name
           .toLowerCase()
           .includes(this.searchQuery.toLowerCase()) ||
-        match.team1.players.some((p) =>
+        match.team1Snapshot?.players.some((p) =>
           p.username.toLowerCase().includes(this.searchQuery.toLowerCase())
         ) ||
-        match.team2.players.some((p) =>
+        match.team2Snapshot?.players.some((p) =>
           p.username.toLowerCase().includes(this.searchQuery.toLowerCase())
         );
 
@@ -209,9 +218,9 @@ export class AdminMatchListComponent implements OnInit {
     if (!this.selectedMatch) return;
 
     this.selectedWinnerTeam =
-      this.selectedMatch.team1.id === event.winnerId
-        ? this.selectedMatch.team1
-        : this.selectedMatch.team2;
+      this.selectedMatch.team1Snapshot?.id === event.winnerId
+        ? this.selectedMatch.team1Snapshot
+        : this.selectedMatch.team2Snapshot || null;
     this.showConfirmModal = true;
   }
 

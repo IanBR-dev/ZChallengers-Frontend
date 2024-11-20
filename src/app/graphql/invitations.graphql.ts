@@ -16,7 +16,7 @@ export const PENDING_INVITATIONS = gql`
         avatar
       }
       status
-      createdAt
+      expiresAt
     }
   }
 `;
@@ -34,7 +34,7 @@ export const INVITE_PLAYER = gql`
         username
       }
       status
-      createdAt
+      expiresAt
     }
   }
 `;
@@ -66,7 +66,7 @@ export const INVITATION_SUBSCRIPTION = gql`
         avatar
       }
       status
-      createdAt
+      expiresAt
     }
   }
 `;
