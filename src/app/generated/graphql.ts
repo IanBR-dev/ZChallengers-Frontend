@@ -139,7 +139,6 @@ export type Query = {
 };
 
 export type RegisterInput = {
-  email: Scalars['String']['input'];
   password: Scalars['String']['input'];
   username: Scalars['String']['input'];
 };
@@ -184,7 +183,6 @@ export type UpdateTeamInput = {
 export type User = {
   avatar: Scalars['String']['output'];
   connected: Scalars['Boolean']['output'];
-  email: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   rank: Scalars['String']['output'];
   team?: Maybe<Team>;
@@ -194,7 +192,6 @@ export type User = {
 export type UserType = {
   avatar: Scalars['String']['output'];
   connected: Scalars['Boolean']['output'];
-  email: Scalars['String']['output'];
   id: Scalars['ID']['output'];
   rank: Scalars['String']['output'];
   team: TeamType;
@@ -217,14 +214,14 @@ export type LoginMutationVariables = Exact<{
 }>;
 
 
-export type LoginMutation = { login: { token: string, user: { id: string, username: string, email: string, rank: string, avatar: string } } };
+export type LoginMutation = { login: { token: string, user: { id: string, username: string, rank: string, avatar: string } } };
 
 export type RegisterMutationVariables = Exact<{
   input: RegisterInput;
 }>;
 
 
-export type RegisterMutation = { register: { token: string, user: { id: string, username: string, email: string, rank: string, avatar: string } } };
+export type RegisterMutation = { register: { token: string, user: { id: string, username: string, rank: string, avatar: string } } };
 
 export type PendingInvitationsQueryVariables = Exact<{ [key: string]: never; }>;
 
@@ -335,12 +332,12 @@ export type AvailableTeamSubscription = { availableTeam: { id: string, name: str
 export type MeQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type MeQuery = { me: { id: string, username: string, email: string, rank: string, avatar: string } };
+export type MeQuery = { me: { id: string, username: string, rank: string, avatar: string } };
 
 export type AvailablePlayersSubscriptionVariables = Exact<{ [key: string]: never; }>;
 
 
-export type AvailablePlayersSubscription = { availablePlayers: Array<{ id: string, username: string, email: string, rank: string, avatar: string }> };
+export type AvailablePlayersSubscription = { availablePlayers: Array<{ id: string, username: string, rank: string, avatar: string }> };
 
 export type DisconnectMutationVariables = Exact<{ [key: string]: never; }>;
 
@@ -354,7 +351,6 @@ export const LoginDocument = gql`
     user {
       id
       username
-      email
       rank
       avatar
     }
@@ -379,7 +375,6 @@ export const RegisterDocument = gql`
     user {
       id
       username
-      email
       rank
       avatar
     }
@@ -942,7 +937,6 @@ export const MeDocument = gql`
   me {
     id
     username
-    email
     rank
     avatar
   }
@@ -964,7 +958,6 @@ export const AvailablePlayersDocument = gql`
   availablePlayers {
     id
     username
-    email
     rank
     avatar
   }

@@ -111,20 +111,6 @@ import { AuthService } from '../services/auth.service';
 
           <div>
             <label class="block text-sm font-medium text-gray-400 mb-2">
-              Email
-            </label>
-            <input
-              type="email"
-              [(ngModel)]="registerData.email"
-              name="email"
-              required
-              class="w-full bg-black/50 border border-gold/30 rounded-lg px-4 py-2 text-white placeholder-gray-500 focus:border-gold focus:outline-none focus:ring-1 focus:ring-gold/50"
-              placeholder="Enter your email"
-            />
-          </div>
-
-          <div>
-            <label class="block text-sm font-medium text-gray-400 mb-2">
               Password
             </label>
             <input
@@ -198,7 +184,6 @@ export class LoginComponent {
   // Register form
   registerData = {
     username: '',
-    email: '',
     password: '',
     confirmPassword: '',
   };
@@ -236,7 +221,6 @@ export class LoginComponent {
   onRegister() {
     if (
       !this.registerData.username ||
-      !this.registerData.email ||
       !this.registerData.password ||
       !this.registerData.confirmPassword
     ) {
@@ -255,7 +239,6 @@ export class LoginComponent {
     const data = {
       username: this.registerData.username,
       password: this.registerData.password,
-      email: this.registerData.email,
     };
 
     this.authService.register(data).subscribe({

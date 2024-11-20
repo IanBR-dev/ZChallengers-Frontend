@@ -7,7 +7,6 @@ export const LOGIN = gql`
       user {
         id
         username
-        email
         rank
         avatar
       }
@@ -22,7 +21,6 @@ export const REGISTER = gql`
       user {
         id
         username
-        email
         rank
         avatar
       }

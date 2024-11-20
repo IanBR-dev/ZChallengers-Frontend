@@ -15,7 +15,6 @@ export interface Player {
   username: string;
   rank?: string;
   avatar?: string;
-  email?: string; // Opcional porque no siempre se usa
   team?: Team | null; // Referencia al equipo actual del jugador
 }
 export interface Team {
