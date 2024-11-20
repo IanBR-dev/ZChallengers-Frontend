@@ -1,5 +1,5 @@
 export const environment = {
   production: true,
-  uri: 'https://battledrei.onrender.com/graphql',
-  wss: 'wss://battledrei.onrender.com/graphql',
+  uri: 'https://zchallengers-backend.onrender.com/graphql',
+  wss: 'wss://zchallengers-backend.onrender.com/graphql',
 };
