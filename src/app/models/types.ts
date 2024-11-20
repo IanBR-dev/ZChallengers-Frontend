@@ -1,3 +1,5 @@
+import { MatchStatus } from '../generated/graphql';
+
 export interface Credentials {
   username: string;
   password: string;
@@ -9,10 +11,10 @@ export interface AuthResponse {
 }
 
 export interface Player {
-  id: string;
+  id?: string;
   username: string;
-  rank: string;
-  avatar: string;
+  rank?: string;
+  avatar?: string;
   email?: string; // Opcional porque no siempre se usa
   team?: Team | null; // Referencia al equipo actual del jugador
 }
@@ -20,7 +22,8 @@ export interface Team {
   id: string;
   name: string;
   players: Player[];
-  captain: Pick<Player, 'id' | 'username'>; // Solo incluye las propiedades devueltas por el backend
+  captain: Pick<Player, 'id'>; // Solo incluye las propiedades devueltas por el backend
+  status?: string;
 }
 
 export interface TeamChallenge {
@@ -34,7 +37,7 @@ export interface TeamChallenge {
 export interface Invitation {
   id: string;
   from: Player; // El backend devuelve todos los campos de "Player" para "from"
-  to: Pick<Player, 'id' | 'username'>; // Solo incluye las propiedades devueltas
+  to: Player; // Solo incluye las propiedades devueltas por el backend
   status: string; // Cambiar a "string" si no puedes garantizar los valores fijos
   createdAt: Date; // Mantener como Date
 }
@@ -55,7 +58,20 @@ export interface MatchResult {
 }
 
 export interface Vote {
-  id: string; // ID único del voto
-  fromPlayer: Player; // Jugador que emitió el voto
-  forPlayer: Player; // Jugador que recibió el voto
+  fromPlayer: Pick<Player, 'id'>; // Jugador que emitió el voto
+  forPlayer: Pick<Player, 'id'>; // Jugador que recibió el voto
+}
+
+export interface Match {
+  id: string; // ID único del partido
+  status: MatchStatus; // Estado del partido
+  team1: Team; // Equipo 1
+  team2: Team; // Equipo 2
+  votes?: Voted[] | null; // Votos emitidos
+  winner?: { id: string } | null; // Equipo ganador
+}
+
+interface Voted {
+  forPlayer: Pick<Player, 'id'>;
+  fromPlayer: Pick<Player, 'id'>;
 }

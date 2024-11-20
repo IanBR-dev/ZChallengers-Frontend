@@ -11,14 +11,20 @@ import { Team, Player, Vote } from '../models/types';
       class="fixed inset-0 bg-black/95 flex items-center justify-center z-50 animate-fadeIn"
     >
       <div class="max-w-2xl w-full mx-4 text-center">
-        <div class="text-6xl gold-gradient font-bold mb-8">VICTORY!</div>
+        <div class="text-6xl gold-gradient font-bold mb-8">
+          {{ canVote ? 'VICTORY!' : 'DEFEAT!' }}
+        </div>
 
         <div class="text-xl mb-4">
-          Choose a player from the opposing team to recruit
+          {{
+            canVote
+              ? 'Choose a player from the opposing team to recruit'
+              : 'Opposing team is voting'
+          }}
         </div>
 
         <div
-          *ngIf="selectedPlayer"
+          *ngIf="selectedPlayer && canVote"
           class="mb-8 text-lg text-gold animate-fadeIn"
         >
           Selected: {{ selectedPlayer.username }}
@@ -27,10 +33,14 @@ import { Team, Player, Vote } from '../models/types';
         <div class="grid grid-cols-2 gap-8 mb-8">
           <div
             *ngFor="let player of opposingTeam.players"
-            class="player-card cursor-pointer transition-all duration-300"
-            [class.selected-player]="selectedPlayer?.id === player.id"
-            [class.opacity-50]="hasVoted && selectedPlayer?.id !== player.id"
-            (click)="selectPlayer(player)"
+            class="player-card transition-all duration-300"
+            [class.selected-player]="
+              canVote && selectedPlayer?.id === player.id
+            "
+            [class.opacity-50]="
+              canVote && hasVoted && selectedPlayer?.id !== player.id
+            "
+            (click)="canVote ? selectPlayer(player) : null"
           >
             <div class="relative">
               <img
@@ -38,7 +48,7 @@ import { Team, Player, Vote } from '../models/types';
                 class="w-24 h-24 rounded-full mx-auto mb-4"
               />
               <div
-                *ngIf="selectedPlayer?.id === player.id"
+                *ngIf="canVote && selectedPlayer?.id === player.id"
                 class="absolute -top-2 -right-2 bg-gold/20 rounded-full p-2 animate-fadeIn"
               >
                 <span class="material-symbols-outlined text-gold">
@@ -59,7 +69,7 @@ import { Team, Player, Vote } from '../models/types';
         </div>
 
         <button
-          *ngIf="!hasVoted"
+          *ngIf="canVote && !hasVoted"
           class="gold-button text-xl px-12"
           [disabled]="!selectedPlayer"
           [class.opacity-50]="!selectedPlayer"
@@ -68,8 +78,8 @@ import { Team, Player, Vote } from '../models/types';
           Vote
         </button>
 
-        <div *ngIf="hasVoted" class="text-xl text-gray-400 animate-pulse">
-          Waiting for other team members to vote...
+        <div *ngIf="!canVote" class="text-xl text-gray-400">
+          Waiting for opposing team to finish voting...
         </div>
 
         <div *ngIf="isVotingComplete" class="mt-8 animate-fadeIn">
@@ -100,7 +110,8 @@ import { Team, Player, Vote } from '../models/types';
 export class VoteModalComponent {
   @Input() opposingTeam!: Team;
   @Input() currentTeam!: Team;
-  @Input() votes: Vote[] = [];
+  @Input() votes: Vote[] | null | undefined = null;
+  @Input() canVote = false;
   @Output() voteSubmitted = new EventEmitter<Player>();
   @Output() continue = new EventEmitter<void>();
 
@@ -110,57 +121,30 @@ export class VoteModalComponent {
   winningPlayer: Player | null = null;
 
   selectPlayer(player: Player) {
-    if (!this.hasVoted) {
+    if (!this.hasVoted && this.canVote) {
       this.selectedPlayer = player;
     }
   }
 
   vote() {
-    if (this.selectedPlayer) {
+    if (this.selectedPlayer && this.canVote) {
       this.hasVoted = true;
       this.voteSubmitted.emit(this.selectedPlayer);
-
-      // Simulate other team members voting
-      setTimeout(() => {
-        // Generate random votes from other team members
-        const otherPlayers = this.currentTeam.players.filter(
-          (p) => p.id !== this.currentTeam.captain.id
-        );
-
-        otherPlayers.forEach((player) => {
-          const randomPlayer =
-            this.opposingTeam.players[
-              Math.floor(Math.random() * this.opposingTeam.players.length)
-            ];
-
-   /*        this.votes = [
-            ...this.votes,
-            {
-              fromPlayer: player,
-              forPlayer: randomPlayer,
-            },
-          ]; */
-        });
-
-        this.isVotingComplete = true;
-        this.calculateWinner();
-      }, 2000); // Show voting progress for 2 seconds
     }
   }
 
-  getVotesForPlayer(player: Player): number {
-    return this.votes.filter((v) => v.forPlayer.id === player.id).length;
+  getVotesForPlayer(player: Player): number | undefined {
+    return this.votes?.filter((v) => v.forPlayer.id === player.id).length;
   }
 
-  private calculateWinner() {
+  /*   private calculateWinner() {
     const voteCounts = new Map<string, number>();
     const playerMap = new Map<string, Player>();
     let maxVotes = 0;
     const topVotedPlayers: Player[] = [];
 
-    // Count votes and track max votes
     this.votes.forEach((vote) => {
-      const playerId = vote.forPlayer.id;
+      const playerId = vote.forPlayer.id || '';
       playerMap.set(playerId, vote.forPlayer);
       const count = (voteCounts.get(playerId) || 0) + 1;
       voteCounts.set(playerId, count);
@@ -174,8 +158,7 @@ export class VoteModalComponent {
       }
     });
 
-    // If there's a tie, randomly select one of the top voted players
     const winnerIndex = Math.floor(Math.random() * topVotedPlayers.length);
     this.winningPlayer = topVotedPlayers[winnerIndex];
-  }
+  } */
 }

@@ -12,35 +12,20 @@ export const LEAVE_QUEUE = gql`
   }
 `;
 
-export const QUEUE_STATUS_SUBSCRIPTION = gql`
-  subscription QueueStatus {
-    queueStatus {
-      status
-      timeElapsed
-      playersInQueue
-    }
-  }
-`;
-
 export const TEAM_FOUND_SUBSCRIPTION = gql`
   subscription TeamFound {
     teamFound {
-      status
-      team {
+      id
+      name
+      players {
         id
-        name
-        players {
-          id
-          username
-          rank
-          avatar
-        }
-        captain {
-          id
-          username
-        }
+        username
+        rank
+        avatar
       }
-      timestamp
+      captain {
+        id
+      }
     }
   }
 `;

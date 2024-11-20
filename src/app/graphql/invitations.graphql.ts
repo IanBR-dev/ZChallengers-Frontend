@@ -13,6 +13,7 @@ export const PENDING_INVITATIONS = gql`
       to {
         id
         username
+        avatar
       }
       status
       createdAt
@@ -40,27 +41,13 @@ export const INVITE_PLAYER = gql`
 
 export const ACCEPT_INVITATION = gql`
   mutation AcceptInvitation($invitationId: String!) {
-    acceptInvitation(invitationId: $invitationId) {
-      id
-      from {
-        id
-        username
-      }
-      to {
-        id
-        username
-      }
-      status
-    }
+    acceptInvitation(invitationId: $invitationId)
   }
 `;
 
 export const DECLINE_INVITATION = gql`
   mutation DeclineInvitation($invitationId: String!) {
-    declineInvitation(invitationId: $invitationId) {
-      id
-      status
-    }
+    declineInvitation(invitationId: $invitationId)
   }
 `;
 
@@ -71,12 +58,12 @@ export const INVITATION_SUBSCRIPTION = gql`
       from {
         id
         username
-        rank
         avatar
       }
       to {
         id
         username
+        avatar
       }
       status
       createdAt

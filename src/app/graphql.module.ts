@@ -6,15 +6,20 @@ import { getMainDefinition } from '@apollo/client/utilities';
 import { createClient } from 'graphql-ws';
 import { HttpLink } from 'apollo-angular/http';
 import { setContext } from '@apollo/client/link/context';
+import { OperationTypeNode } from 'graphql';
+import { WebSocketLink } from '@apollo/client/link/ws';
 
 export function createApollo(httpLink: HttpLink): ApolloClientOptions<any> {
   // WebSocket Link para suscripciones
   const wsLink = new GraphQLWsLink(
     createClient({
       url: 'ws://localhost:3000/graphql',
-      connectionParams: () => ({
-        Authorization: `Bearer ${localStorage.getItem('auth_token')}`,
-      }),
+      connectionParams: async () => {
+        const token = localStorage.getItem('auth_token');
+        return {
+          Authorization: token ? `Bearer ${token}` : '',
+        };
+      },
     })
   );
 
@@ -26,12 +31,11 @@ export function createApollo(httpLink: HttpLink): ApolloClientOptions<any> {
   // setContext para agregar el token dinámicamente a cada solicitud HTTP
   const authLink = setContext((operation, context) => {
     const token = localStorage.getItem('auth_token');
-    return {
-      headers: {
-        ...context['headers'],
-        Authorization: token ? `Bearer ${token}` : '',
-      },
+    const headers = {
+      ...(context?.['headers'] || {}),
+      Authorization: token ? `Bearer ${token}` : '',
     };
+    return { headers };
   });
 
   // Dividir entre WebSocket y HTTP según el tipo de operación
@@ -40,7 +44,7 @@ export function createApollo(httpLink: HttpLink): ApolloClientOptions<any> {
       const definition = getMainDefinition(query);
       return (
         definition.kind === 'OperationDefinition' &&
-        definition.operation === 'subscription'
+        definition.operation === OperationTypeNode.SUBSCRIPTION
       );
     },
     wsLink,

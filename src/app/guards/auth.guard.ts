@@ -9,15 +9,14 @@ import { AuthService } from '../services/auth.service';
 export class AuthGuard {
   constructor(private authService: AuthService, private router: Router) {}
 
-  canActivate(): Observable<boolean> {
-    return this.authService.getCurrentUser().pipe(
-      map((user) => {
-        if (!user) {
-          this.router.navigate(['/login']);
-          return false;
-        }
-        return true;
-      })
-    );
+  canActivate(): Observable<boolean> | Promise<boolean> {
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+      this.router.navigate(['/login']);
+      return Promise.resolve(false);
+    }
+
+    return this.authService.loadUserFromToken();
   }
 }

@@ -1,55 +1,51 @@
 import { Injectable } from '@angular/core';
-import { BehaviorSubject, Observable } from 'rxjs';
-import { filter, map, tap } from 'rxjs/operators';
+import { BehaviorSubject, Observable, of } from 'rxjs';
+import { catchError, filter, map, tap } from 'rxjs/operators';
 import {
   JoinQueueGQL,
   LeaveQueueGQL,
-  QueueStatusGQL,
-  QueueStatusSubscription,
+  TeamFoundGQL,
+  TeamFoundSubscription,
 } from '../generated/graphql';
 
 @Injectable({
   providedIn: 'root',
 })
 export class QueueService {
-  private queueStatusSubject = new BehaviorSubject<any>(null);
-
   constructor(
     private joinQueueGQL: JoinQueueGQL,
     private leaveQueueGQL: LeaveQueueGQL,
-    private queueStatusGQL: QueueStatusGQL
+    private teamFoundGQL: TeamFoundGQL
   ) {}
 
-  joinQueue(): Observable<any> {
+  joinQueue(): Observable<boolean> {
     return this.joinQueueGQL.mutate().pipe(
-      tap(() => {
-        console.log('Joined queue');
+      map((result) => result.data?.joinQueue ?? false),
+      tap((success) => {
+        if (success) {
+        } else {
+        }
+      }),
+      catchError((error) => {
+        return of(false);
       })
     );
   }
 
   leaveQueue(): Observable<any> {
-    return this.leaveQueueGQL.mutate().pipe(
-      tap(() => {
-        console.log('Left queue');
-      })
-    );
+    return this.leaveQueueGQL.mutate().pipe(tap(() => {}));
   }
 
-  getQueueStatus(): Observable<QueueStatusSubscription['queueStatus']> {
-    return this.queueStatusGQL.subscribe().pipe(
-      map((result) => result.data?.queueStatus),
+  teamFound(): Observable<TeamFoundSubscription['teamFound']> {
+    return this.teamFoundGQL.subscribe().pipe(
+      map((result) => result.data?.teamFound),
       filter(
         (queueStatus): queueStatus is NonNullable<typeof queueStatus> =>
           !!queueStatus
       ), // Filtra valores nulos/indefinidos
       tap((queueStatus) => {
-        this.queueStatusSubject.next(queueStatus);
+        return queueStatus;
       })
     );
-  }
-
-  observeQueueStatus(): Observable<any> {
-    return this.queueStatusSubject.asObservable();
   }
 }

@@ -1,17 +1,36 @@
-import { Component, OnInit, OnDestroy } from '@angular/core';
+import {
+  Component,
+  OnInit,
+  OnDestroy,
+  OnChanges,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { GameService } from '../services/game.service';
 import { QueueService } from '../services/queue.service';
-import { Player, Team, QueueMatch, Invitation, Vote } from '../models/types';
+import {
+  Player,
+  Team,
+  QueueMatch,
+  Invitation,
+  Vote,
+  Match,
+} from '../models/types';
 import { SidebarComponent } from './sidebar.component';
 import { ChallengeModalComponent } from './challenge-modal.component';
 import { QueueComponent } from './queue.component';
 import { MatchFoundComponent } from './match-found.component';
-import { Subscription } from 'rxjs';
+import { firstValueFrom, Subscription, take } from 'rxjs';
 import { TeamFoundComponent } from './team-found.component';
 import { VoteModalComponent } from './vote-modal.component';
 import { AuthService } from '../services/auth.service';
+import { TeamsService } from '../services/teams.service';
+import { InvitationsService } from '../services/invitations.service';
+import { MatchesService } from '../services/matches.service';
+import { TeamChallengeComponent } from './team-challenge.component';
+import { MatchStatusComponent } from './match-status.component';
+import { MatchStatus } from '../generated/graphql';
 
 @Component({
   selector: 'app-lobby',
@@ -22,31 +41,33 @@ import { AuthService } from '../services/auth.service';
     SidebarComponent,
     ChallengeModalComponent,
     QueueComponent,
-    MatchFoundComponent,
     TeamFoundComponent,
     VoteModalComponent,
+    TeamChallengeComponent,
+    MatchStatusComponent,
   ],
   template: `
     <div class="min-h-screen bg-black">
       <!-- Team Found Modal (for queue matches) -->
       <app-team-found
-        *ngIf="queueMatch"
-        [match]="queueMatch"
-        (accept)="acceptQueueMatch()"
-        (decline)="declineQueueMatch()"
+        *ngIf="teamFound"
+        [team]="teamFound"
+        (closeModal)="closeModalTeamFound()"
       >
       </app-team-found>
 
       <!-- Match Found Modal (for team challenges) -->
-      <app-match-found
-        *ngIf="challengingTeam"
+      <app-team-challenge
+        *ngIf="showChallenge"
         [challengingTeam]="challengingTeam"
-        (matchComplete)="onMatchComplete($event)"
-      >
-      </app-match-found>
+        [challengedTeam]="challengedTeam"
+        [isChallenger]="isChallenger"
+        (closeChallengeModal)="closeChallengeModal()"
+      ></app-team-challenge>
 
       <app-vote-modal
         *ngIf="showVoting"
+        [canVote]="canVote"
         [opposingTeam]="lastOpposingTeam!"
         [currentTeam]="currentTeam!"
         [votes]="currentVotes"
@@ -88,7 +109,7 @@ import { AuthService } from '../services/auth.service';
       </header>
 
       <!-- Main Content -->
-      <div class="pt-24 px-4 pb-4">
+      <div class="pt-24 px-4 pb-4" *ngIf="!match">
         <div class="max-w-5xl mx-auto">
           <!-- Current Team Info -->
           <div class="gold-border rounded-lg p-6 bg-black/50 mb-8">
@@ -120,7 +141,7 @@ import { AuthService } from '../services/auth.service';
               </button>
             </ng-container>
 
-            <ng-container *ngIf="!currentTeam">
+            <ng-container *ngIf="!currentTeam && currentPlayer">
               <div class="player-card mb-6">
                 <div class="flex items-center gap-2">
                   <img
@@ -133,12 +154,12 @@ import { AuthService } from '../services/auth.service';
                   }}</span>
                 </div>
               </div>
-              <app-queue></app-queue>
+              <app-queue (teamFounded)="teamFounded($event)"></app-queue>
             </ng-container>
           </div>
 
           <!-- Available Teams -->
-          <div *ngIf="currentTeam && isTeamCaptain" class="mb-8">
+          <div *ngIf="currentTeam" class="mb-8">
             <div class="flex items-center justify-between mb-4">
               <h2 class="text-2xl gold-gradient">Available Teams</h2>
               <div class="relative">
@@ -164,6 +185,7 @@ import { AuthService } from '../services/auth.service';
                 <div class="flex justify-between items-start mb-4">
                   <h3 class="text-xl gold-gradient">{{ team.name }}</h3>
                   <button
+                    *ngIf="isTeamCaptain"
                     class="gold-button text-sm"
                     (click)="openChallengeModal(team)"
                   >
@@ -191,8 +213,15 @@ import { AuthService } from '../services/auth.service';
         </div>
       </div>
 
+      <app-match-status
+        *ngIf="match"
+        [team1]="match.team1"
+        [team2]="match.team2"
+      ></app-match-status>
+
       <!-- Sidebar -->
       <app-sidebar
+        *ngIf="!currentTeam"
         [isExpanded]="sidebarExpanded"
         [invitations]="invitations"
         [availablePlayers]="availablePlayers"
@@ -214,7 +243,8 @@ import { AuthService } from '../services/auth.service';
 })
 export class LobbyComponent implements OnInit, OnDestroy {
   currentPlayer!: Player;
-  currentTeam: Team | null = null;
+  currentTeam: Team | null | undefined = null;
+  teamFound: Team | null = null;
   invitations: Invitation[] = [];
   sidebarExpanded = false;
   settingsOpen = false;
@@ -222,69 +252,174 @@ export class LobbyComponent implements OnInit, OnDestroy {
   availableTeams: Team[] = [];
   teamSearchQuery = '';
   selectedTeam: Team | null = null;
-  matchFound: QueueMatch | null = null;
+  match: Match | null = null;
   private subscriptions: Subscription[] = [];
-  queueMatch: QueueMatch | null = null;
   challengingTeam: Team | null = null;
+  challengedTeam: Team | null = null;
+  isChallenger = false;
+  showChallenge = false;
   showVoting = false;
   lastOpposingTeam: Team | null = null;
-  currentVotes: Vote[] = [];
+  currentVotes: Vote[] | null | undefined = null;
+  canVote = false;
+
+  private getAvailablePlayersSubscription: Subscription[] = [];
+  private getAvailableTeamSubscription: Subscription[] = [];
+  private matchSubscription: Subscription[] = [];
 
   constructor(
     private authService: AuthService,
     private gameService: GameService,
-    private queueService: QueueService
+    private teamsService: TeamsService,
+    private invitationsService: InvitationsService,
+    private matchesService: MatchesService
   ) {}
 
-  ngOnInit() {
+  async ngOnInit() {
     this.requestNotificationPermission();
-    this.subscriptions.push(
-      this.authService.getCurrentUser().subscribe((user) => {
-        this.currentPlayer = user;
-      }),
-
-      this.gameService.getCurrentTeam().subscribe((team) => {
-        this.currentTeam = team;
-      }),
-
-      this.gameService.getPendingInvitations().subscribe((invitations) => {
-        this.invitations = invitations;
-      }),
-
-      this.gameService.getAvailableTeams().subscribe((teams) => {
-        this.availableTeams = teams;
-      }),
-
-/*       this.queueService.getMatchFound().subscribe((match) => {
-        this.matchFound = match;
-      }),
-      this.queueService.getMatchFound().subscribe((match) => {
-        this.queueMatch = match;
-      }),
-      this.gameService.getTeamChallenges().subscribe((team) => {
-        this.challengingTeam = team;
-      }) */
+    this.currentPlayer = await firstValueFrom(
+      this.authService.getCurrentUser()
     );
-
-    // Simulate available players
-/*     this.availablePlayers = Array(5)
-      .fill(0)
-      .map(() => this.gameService.generateRandomPlayer()); */
+    await this.getCurrentTeam();
+    this.subscriptions.push(
+      this.invitationsService.getInvitations().subscribe((invitation) => {
+        if (
+          invitation.status === 'PENDING' &&
+          invitation.to.id === this.currentPlayer.id
+        ) {
+          this.invitations.push(invitation);
+        }
+        if (invitation.status === 'ACCEPTED') {
+          this.invitations.filter((inv) => inv.id !== invitation.id);
+          this.getCurrentTeam();
+        }
+        if (invitation.status === 'DECLINED') {
+          this.invitations = this.invitations.filter(
+            (inv) => inv.id !== invitation.id
+          );
+        }
+      })
+    );
   }
 
   private async requestNotificationPermission() {
     if ('Notification' in window && Notification.permission === 'default') {
       try {
         const permission = await Notification.requestPermission();
-        console.log('Notification permission:', permission);
-      } catch (error) {
-        console.error('Error requesting notification permission:', error);
-      }
+      } catch (error) {}
     }
   }
 
   ngOnDestroy() {
     this.subscriptions.forEach((sub) => sub.unsubscribe());
+  }
+
+  async getCurrentTeam(): Promise<void> {
+    if (!this.currentTeam) {
+      this.currentTeam = await firstValueFrom(
+        this.teamsService.getCurrentTeam()
+      );
+      this.getAvailablePlayersSubscription.push(
+        this.gameService.getAvailablePlayers().subscribe((players: any) => {
+          this.availablePlayers = players.filter(
+            (player: any) => player.id !== this.currentPlayer.id
+          );
+        })
+      );
+    }
+    if (this.currentTeam) {
+      this.getAvailableTeams();
+      this.getAvailableTeamSub(true);
+      this.getMatchSub(true);
+    }
+  }
+
+  async teamFounded(team: Team) {
+    this.currentTeam = team;
+    this.getAvailablePlayersSubscription.forEach((sub) => sub.unsubscribe());
+  }
+
+  async getAvailableTeams() {
+    this.availableTeams = [
+      ...(await firstValueFrom(this.teamsService.getAvailableTeams())),
+    ];
+  }
+
+  async getAvailableTeamSub(sub?: boolean) {
+    if (sub) {
+      this.getAvailableTeamSubscription.push(
+        this.teamsService.getAvailableTeam().subscribe((team) => {
+          if (team.status === 'available') {
+            this.availableTeams.push(team);
+          }
+          if (team.status === 'in-match') {
+            this.availableTeams = this.availableTeams.filter(
+              (t) => t.id !== team.id
+            );
+          }
+        })
+      );
+    } else {
+      this.getAvailableTeamSubscription.forEach((sub) => sub.unsubscribe());
+    }
+  }
+
+  async getMatchSub(sub?: boolean) {
+    if (sub) {
+      this.matchSubscription.push(
+        this.matchesService.matchStatus().subscribe((match) => {
+          if (match && match.status === MatchStatus.InProgress) {
+            const myTeam = this.currentTeam?.id;
+            this.challengingTeam = match.team1;
+            this.challengedTeam = match.team2;
+            this.isChallenger = myTeam === match.team1.id;
+            this.showChallenge = true;
+            // Eliminar availableTeam del suscriptor
+            this.getAvailableTeamSub();
+            this.subscriptions.forEach((sub) => sub.unsubscribe());
+            setTimeout(() => {
+              this.match = match;
+            }, 9500);
+          }
+          if (
+            match &&
+            match.status === MatchStatus.Voting &&
+            match.winner &&
+            match.votes &&
+            match.votes?.length === 0
+          ) {
+            const team1 = match.team1;
+            const team2 = match.team2;
+            const winnerTeam = match.winner.id;
+            const losserTeam = winnerTeam === team1.id ? team2 : team1;
+            if (winnerTeam === this.currentTeam?.id) {
+              this.canVote = true;
+            }
+            this.onMatchComplete(losserTeam);
+          }
+          if (
+            match &&
+            match.status === MatchStatus.Voting &&
+            match.votes &&
+            match.votes?.length > 0
+          ) {
+            this.currentVotes = match.votes;
+          }
+          if (match.status === MatchStatus.Completed) {
+            // Refresh my team
+            const team1 = match.team1;
+            const team2 = match.team2;
+            const teams = [team1, team2];
+            this.currentTeam = teams.find((team) =>
+              team.players.some((player) => player.id === this.currentPlayer.id)
+            );
+            this.onVotingComplete();
+          }
+        })
+      );
+    } else {
+      this.matchSubscription.forEach((sub) => sub.unsubscribe());
+    }
   }
 
   get isTeamCaptain(): boolean {
@@ -315,42 +450,72 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   acceptInvitation(id: string) {
-    this.gameService.acceptInvitation(id);
+    this.invitationsService.acceptInvitation(id).subscribe({
+      next: (response) => {
+        this.currentTeam = response.data.acceptInvitation.team;
+        this.getAvailablePlayersSubscription.forEach((sub) =>
+          sub.unsubscribe()
+        );
+      },
+      error: (err) => {
+        console.error('Error accepting invitation:', err);
+      },
+    });
   }
 
   declineInvitation(id: string) {
-    this.gameService.declineInvitation(id);
+    this.invitationsService.declineInvitation(id).subscribe();
   }
 
   invitePlayer(id: string) {
-    console.log('Inviting player:', id);
+    this.invitationsService.invitePlayer(id).subscribe();
   }
 
   leaveTeam() {
     // this.gameService.leaveTeam();
   }
 
+  async closeModalTeamFound() {
+    this.currentTeam = this.teamFound;
+    this.teamFound = null;
+    this.getCurrentTeam();
+  }
+
   openChallengeModal(team: Team) {
-    this.selectedTeam = team;
+    if (this.isTeamCaptain) {
+      this.selectedTeam = team;
+    }
+  }
+
+  closeChallengeModal() {
+    this.showChallenge = false;
   }
 
   confirmChallenge(team: Team) {
-    // this.gameService.challengeTeam(team);
+    const input = { team1Id: this.currentTeam?.id, team2Id: team.id };
+    this.matchesService.challengeTeam(input).subscribe({
+      next: (response) => {
+        const match = response.data?.createMatch;
+        if (match) {
+          const myTeam = this.currentTeam?.id;
+          this.challengingTeam =
+            match.team1.id === myTeam ? match.team2 : match.team1;
+          this.challengedTeam =
+            match.team1.id !== myTeam ? match.team1 : match.team2;
+          this.isChallenger = true;
+          this.showChallenge = true;
+          setTimeout(() => {
+            this.match = match;
+          }, 9500);
+        }
+      },
+      error: (err) => {},
+    });
     this.selectedTeam = null;
   }
 
   cancelChallenge() {
     this.selectedTeam = null;
-  }
-
-  acceptMatch() {
-    if (this.matchFound) {
-      // this.queueService.acceptMatch(this.matchFound);
-    }
-  }
-
-  declineMatch() {
-    // this.queueService.declineMatch();
   }
 
   openProfile() {
@@ -359,6 +524,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   logout() {
     this.settingsOpen = false;
+    this.authService.logout();
   }
 
   onTeamChallenge(team: Team) {
@@ -369,35 +535,27 @@ export class LobbyComponent implements OnInit, OnDestroy {
     }, 10000);
   }
 
-  acceptQueueMatch() {
-    if (this.queueMatch) {
-      // this.queueService.acceptMatch(this.queueMatch);
-    }
-  }
-
-  declineQueueMatch() {
-    // this.queueService.declineMatch();
-  }
-
-  onMatchComplete(opposingTeam: Team) {
+  onMatchComplete(lossingTeam: Team) {
     this.challengingTeam = null;
-    this.lastOpposingTeam = opposingTeam;
+    this.lastOpposingTeam = lossingTeam;
     this.showVoting = true;
   }
 
   onVoteSubmitted(player: Player) {
-/*     const vote: Vote = {
-      fromPlayer: this.currentPlayer,
-      forPlayer: player,
-    }; */
-    // this.currentVotes = [...this.currentVotes, vote];
+    const input: any = {
+      matchId: this.match?.id,
+      forPlayerId: player.id,
+    };
+    this.matchesService.createVote(input).pipe(take(1)).subscribe();
   }
 
   onVotingComplete() {
     this.showVoting = false;
-    // Update the team with the new player
-    // Reset for next match
+    this.canVote = false;
+    this.match = null;
     this.lastOpposingTeam = null;
+    this.matchSubscription.forEach((sub) => sub.unsubscribe());
+    this.getAvailableTeams();
     this.currentVotes = [];
   }
 }

@@ -13,7 +13,7 @@ export const GET_ME = gql`
 `;
 
 export const GET_AVAILABLE_PLAYERS = gql`
-  query AvailablePlayers {
+  subscription AvailablePlayers {
     availablePlayers {
       id
       username
@@ -21,5 +21,11 @@ export const GET_AVAILABLE_PLAYERS = gql`
       rank
       avatar
     }
+  }
+`;
+
+export const DISCONNECT = gql`
+  mutation Disconnect {
+    disconnect
   }
 `;

@@ -181,7 +181,7 @@ import { Invitation, Player } from '../models/types';
 })
 export class SidebarComponent {
   @Input() isExpanded = false;
-  @Input() invitations: Invitation[] = [];
+  @Input() invitations: Invitation[]  = [];
   @Input() availablePlayers: Player[] = [];
 
   @Output() toggle = new EventEmitter<void>();
@@ -206,7 +206,7 @@ export class SidebarComponent {
     return this.availablePlayers.filter(
       (player) =>
         player.username.toLowerCase().includes(query) ||
-        player.rank.toLowerCase().includes(query)
+        player.rank?.toLowerCase().includes(query)
     );
   }
 }

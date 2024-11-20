@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { filter, map, tap } from 'rxjs/operators';
+import { filter, map, take, tap } from 'rxjs/operators';
 import { Apollo } from 'apollo-angular';
 import { LOGIN, REGISTER } from '../graphql/auth.graphql';
 import { GET_ME } from '../graphql/users.graphql';
@@ -10,7 +10,10 @@ import {
   MeQuery,
   LoginInput,
   RegisterInput,
+  DisconnectGQL,
+  MeGQL,
 } from '../generated/graphql';
+import { Router } from '@angular/router';
 
 @Injectable({
   providedIn: 'root',
@@ -19,7 +22,12 @@ export class AuthService {
   private currentUserSubject = new BehaviorSubject<any>(null);
   private readonly TOKEN_KEY = 'auth_token';
 
-  constructor(private apollo: Apollo) {
+  constructor(
+    private router: Router,
+    private apollo: Apollo,
+    private disconnectGQL: DisconnectGQL,
+    private currentUserGQL: MeGQL
+  ) {
     const token = localStorage.getItem(this.TOKEN_KEY);
     if (token) {
       this.loadUserFromToken();
@@ -64,17 +72,29 @@ export class AuthService {
       );
   }
 
-  logout(): void {
+  async logout() {
+    await this.disconnect();
     localStorage.removeItem(this.TOKEN_KEY);
     this.currentUserSubject.next(null);
     this.apollo.client.resetStore();
+    this.router.navigate(['/login']);
   }
 
   getCurrentUser(): Observable<any> {
-    return this.currentUserSubject.asObservable();
+    return this.currentUserGQL.fetch().pipe(
+      take(1),
+      map((result) => result.data?.me),
+      filter((me): me is NonNullable<typeof me> => !!me), // Filtra valores nulos/indefinidos
+      tap((me) => {
+        if (me) {
+          return me;
+        }
+        return null;
+      })
+    );
   }
 
-  private loadUserFromToken(): void {
+  loadUserFromToken(): any {
     this.apollo
       .query<MeQuery>({
         query: GET_ME,
@@ -84,11 +104,25 @@ export class AuthService {
         next: (user) => {
           if (user) {
             this.currentUserSubject.next(user);
+            return true;
           }
+          return false;
         },
         error: () => {
           this.logout();
+          return false;
         },
       });
+  }
+
+  async disconnect() {
+    this.disconnectGQL.mutate().subscribe({
+      next: (response) => {
+        if (response.data?.disconnect) {
+        } else {
+        }
+      },
+      error: (err) => {},
+    });
   }
 }

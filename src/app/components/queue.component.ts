@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, EventEmitter, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { QueueService } from '../services/queue.service';
+import { Team } from '../models/types';
 
 @Component({
   selector: 'app-queue',
@@ -43,26 +44,45 @@ import { QueueService } from '../services/queue.service';
     </div>
   `,
 })
-export class QueueComponent {
+export class QueueComponent implements OnInit {
   inQueue = false;
   queueTime = '00:00';
   private queueStartTime: number = 0;
   private timerInterval: any;
+  @Output() teamFounded = new EventEmitter<Team>();
 
   constructor(private queueService: QueueService) {}
+
+  ngOnInit(): void {
+    this.queueService.teamFound().subscribe((teamfound) => {
+      if (teamfound) {
+        this.teamFounded.emit(teamfound);
+      }
+    });
+  }
 
   startQueue() {
     this.inQueue = true;
     this.queueStartTime = Date.now();
     this.updateTimer();
     this.timerInterval = setInterval(() => this.updateTimer(), 1000);
-    this.queueService.joinQueue();
+    this.queueService.joinQueue().subscribe((success) => {
+      if (success) {
+      } else {
+      }
+    });
   }
 
   cancelQueue() {
     this.inQueue = false;
     clearInterval(this.timerInterval);
-    this.queueService.leaveQueue();
+    this.queueService.leaveQueue().subscribe((success) => {
+      if (success) {
+        this.inQueue = false;
+        clearInterval(this.timerInterval);
+      } else {
+      }
+    });
   }
 
   private updateTimer() {

@@ -1,6 +1,6 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { QueueMatch } from '../models/types';
+import { Team } from '../models/types';
 
 @Component({
   selector: 'app-team-found',
@@ -17,31 +17,14 @@ import { QueueMatch } from '../models/types';
           </div>
 
           <div class="grid grid-cols-2 gap-8 mb-8">
-            <div class="player-card">
+            <div class="player-card" *ngFor="let player of team.players">
               <img
-                [src]="match.player1.avatar"
+                [src]="player.avatar"
                 class="w-24 h-24 rounded-full mx-auto mb-4"
               />
-              <div class="text-xl font-bold">{{ match.player1.username }}</div>
-              <div class="text-gold">{{ match.player1.rank }}</div>
+              <div class="text-xl font-bold">{{ player.username }}</div>
+              <div class="text-gold">{{ player.rank }}</div>
             </div>
-            <div class="player-card">
-              <img
-                [src]="match.player2.avatar"
-                class="w-24 h-24 rounded-full mx-auto mb-4"
-              />
-              <div class="text-xl font-bold">{{ match.player2.username }}</div>
-              <div class="text-gold">{{ match.player2.rank }}</div>
-            </div>
-          </div>
-
-          <div class="flex justify-center gap-8">
-            <button class="gold-button text-xl px-12" (click)="accept.emit()">
-              Accept
-            </button>
-            <button class="gold-button text-xl px-12" (click)="decline.emit()">
-              Decline
-            </button>
           </div>
         </div>
       </div>
@@ -49,12 +32,14 @@ import { QueueMatch } from '../models/types';
   `,
 })
 export class TeamFoundComponent {
-  @Input() match!: QueueMatch;
-  @Output() accept = new EventEmitter<void>();
-  @Output() decline = new EventEmitter<void>();
+  @Input() team!: Team;
+  @Output() closeModal = new EventEmitter<void>();
 
   ngOnInit() {
     this.showNotification();
+    setTimeout(() => {
+      this.closeModal.emit();
+    }, 10000);
   }
 
   private showNotification() {
