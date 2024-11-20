@@ -7,13 +7,16 @@ import { createClient } from 'graphql-ws';
 import { HttpLink } from 'apollo-angular/http';
 import { setContext } from '@apollo/client/link/context';
 import { OperationTypeNode } from 'graphql';
-import { WebSocketLink } from '@apollo/client/link/ws';
+import { environment } from '../environments/environment';
+
+const uri = environment.uri;
+const wss = environment.wss;
 
 export function createApollo(httpLink: HttpLink): ApolloClientOptions<any> {
   // WebSocket Link para suscripciones
   const wsLink = new GraphQLWsLink(
     createClient({
-      url: 'ws://localhost:3000/graphql',
+      url: wss,
       connectionParams: async () => {
         const token = localStorage.getItem('auth_token');
         return {
@@ -25,7 +28,7 @@ export function createApollo(httpLink: HttpLink): ApolloClientOptions<any> {
 
   // HttpLink para consultas y mutaciones
   const http = httpLink.create({
-    uri: 'http://localhost:3000/graphql',
+    uri,
   });
 
   // setContext para agregar el token dinámicamente a cada solicitud HTTP
