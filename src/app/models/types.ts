@@ -56,6 +56,7 @@ export interface MatchResult {
 }
 
 export interface Vote {
+  id?: string; // ID único del voto
   fromPlayer: Pick<Player, 'id'>; // Jugador que emitió el voto
   forPlayer: Pick<Player, 'id'>; // Jugador que recibió el voto
 }

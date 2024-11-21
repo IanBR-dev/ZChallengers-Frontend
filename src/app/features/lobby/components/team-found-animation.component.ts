@@ -1,12 +1,11 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { PlayerCardComponent } from './player-card.component';
 import { Team } from '../../../models/types';
 
 @Component({
   selector: 'app-team-found-animation',
   standalone: true,
-  imports: [CommonModule, PlayerCardComponent],
+  imports: [CommonModule],
   template: `
     <div
       class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center"
@@ -39,7 +38,7 @@ import { Team } from '../../../models/types';
             <!-- Icono central -->
             <div class="relative z-10 mb-6 transform animate-bounce-in">
               <span class="material-symbols-outlined text-6xl text-gold mb-4">
-                {{ isInvitation ? 'group' : 'swords' }}
+                {{ isInvitation ? 'diversity_3' : 'group' }}
               </span>
               <h2 class="text-2xl font-bold gold-gradient mb-2">
                 {{ isInvitation ? 'Team Joined!' : 'Team Found!' }}
@@ -58,12 +57,27 @@ import { Team } from '../../../models/types';
           <div class="mt-8 space-y-4 animate-slide-up">
             <h3 class="text-xl gold-gradient">{{ team.name }}</h3>
             <div class="grid gap-2">
-              <app-player-card
+              <div
                 *ngFor="let player of team.players"
-                [player]="player"
-                [isCaptain]="player.id === team.captain.id"
+                class="bg-black/30 p-3 rounded-lg border border-gold/10 flex items-center gap-3"
               >
-              </app-player-card>
+                <img
+                  [src]="player.avatar"
+                  [alt]="player.username"
+                  class="w-8 h-8 rounded-full object-cover"
+                />
+                <div class="flex-1 text-left">
+                  <div class="flex items-center gap-2">
+                    <span class="font-medium">{{ player.username }}</span>
+                    <span
+                      *ngIf="player.id === team.captain?.id"
+                      class="text-gold text-xs"
+                      >Captain</span
+                    >
+                  </div>
+                  <span class="text-xs text-gray-400">{{ player.rank }}</span>
+                </div>
+              </div>
             </div>
           </div>
 

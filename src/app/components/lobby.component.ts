@@ -49,17 +49,17 @@ import { MatchStatusComponent } from './match-status.component';
         (closeChallengeModal)="closeChallengeModal()"
       ></app-team-challenge>
 
-      <app-vote-modal
-        *ngIf="showVoting"
-        [canVote]="canVote"
-        [myVote]="myVote"
-        [opposingTeam]="lastOpposingTeam!"
-        [currentTeam]="currentTeam!"
-        [votes]="currentVotes"
-        (voteSubmitted)="onVoteSubmitted($event)"
-        (continue)="onVotingComplete()"
-      >
-      </app-vote-modal>
+  <!--     <app-vote-modal -->
+  <!--       *ngIf="showVoti -->ng"
+  <!--       [canVote]="canV -->ote"
+  <!--       [myVote]="myVot -->e"
+  <!--       [opposingTeam]= -->"lastOpposingTeam!"
+  <!--       [currentTeam]=" -->currentTeam!"
+  <!--       [votes]="curren -->tVotes"
+  <!--       (voteSubmitted) -->="onVoteSubmitted($event)"
+  <!--       (continue)="onV -->otingComplete()"
+  <!--     > -->
+  <!--     </app-vote-modal> -->
       <!-- Header -->
       <header
         class="fixed top-0 left-0 right-0 bg-black/95 z-50 px-8 py-4 border-b border-gold/20"

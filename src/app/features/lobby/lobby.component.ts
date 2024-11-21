@@ -88,14 +88,13 @@ import { MatchesService } from '../../services/matches.service';
 
       <app-vote-modal
         *ngIf="showVoting"
-        [canVote]="canVote"
-        [myVote]="myVote"
         [opposingTeam]="lastOpposingTeam!"
         [currentTeam]="currentTeam!"
-        [votes]="currentVotes"
-        (voteSubmitted)="onVoteSubmitted($event)"
-        (continue)="onVotingComplete()"
-        class="z-50"
+        [canVote]="canVote"
+        [submittedVotes]="currentVotes"
+        [isComplete]="isVotingComplete"
+        (onVoteSubmit)="handleVoteSubmit($event)"
+        (onVotingComplete)="handleVotingComplete()"
       >
       </app-vote-modal>
 
@@ -246,9 +245,10 @@ export class LobbyComponent implements OnInit, OnDestroy {
   challengedTeam: Team | null = null;
   isChallenger = false;
   lastOpposingTeam: Team | null = null;
-  currentVotes: Vote[] | null | undefined = null;
+  currentVotes: Vote[] = [];
   canVote = false;
   myVote: Vote | undefined = undefined;
+  isVotingComplete = false;
 
   // Invitations
   invitations: Invitation[] = [];
@@ -312,10 +312,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
     } else {
       await this.initSoloState();
     }
-
     const myMatch = await firstValueFrom(this.matchesService.getMyMatch());
     if (myMatch) {
-      await this.initMatchState(myMatch);
+      await this.handleMatchUpdate(myMatch);
     }
   }
 
@@ -330,15 +329,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
     await this.getAvailablePlayers();
     this.setupAvailablePlayersSubscription();
     this.setupInvitationsSubscription();
-  }
-
-  private async initMatchState(match: Match) {
-    this.setMatch(match);
-    if (match.status === 'IN_PROGRESS') {
-      this.setupMatchStatusSubscription();
-    } else if (match.status === 'VOTING') {
-      this.setupVotingState(match);
-    }
   }
 
   // Subscription Setup Methods
@@ -387,6 +377,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
       .matchStatus()
       .subscribe({
         next: (match) => {
+          console.log(match);
+
           this.handleMatchUpdate(match);
         },
       });
@@ -461,7 +453,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
     }
   }
 
-  private handleMatchUpdate(match: Match) {
+  private async handleMatchUpdate(match: Match) {
+    console.log(match);
+    this.match = match;
     if (match.status === 'IN_PROGRESS') {
       this.handleMatchInProgress(match);
     } else if (match.status === 'VOTING') {
@@ -472,6 +466,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   private handleMatchInProgress(match: Match) {
+    console.log('progress');
+
     const myTeam = this.currentTeam?.id;
     this.challengingTeam = match.team1;
     this.challengedTeam = match.team2;
@@ -483,38 +479,65 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   private handleMatchVoting(match: Match) {
+    console.log('Handling match voting', match);
     if (match.winner && match.votes) {
       const team1 = match.team1;
       const team2 = match.team2;
-      const winnerTeam = match.winner.id;
-      const loserTeam = winnerTeam === team1.id ? team2 : team1;
+      const winnerTeamId = match.winner.id;
+      const loserTeam = winnerTeamId === team1.id ? team2 : team1;
+      const winnerTeam = winnerTeamId === team1.id ? team1 : team2;
 
-      if (winnerTeam === this.currentTeam?.id) {
-        this.canVote = true;
+      // Actualizar estado de votación
+      this.canVote = winnerTeamId === this.currentTeam?.id;
+
+      // Actualizar votos solo si son diferentes
+      if (JSON.stringify(this.currentVotes) !== JSON.stringify(match.votes)) {
+        console.log('Updating votes:', match.votes);
+        this.currentVotes = [...match.votes];
+
+        // Actualizar mi voto si existe
+        this.myVote = this.currentVotes.find(
+          (vote) => vote.fromPlayer.id === this.currentPlayer.id
+        );
       }
 
-      this.myVote = match.votes.find(
-        (v) => v.fromPlayer.id === this.currentPlayer.id
-      );
-      this.currentVotes = match.votes;
-      this.onMatchComplete(loserTeam);
+      // Mostrar modal de votación si aún no está visible
+      if (!this.showVoting) {
+        this.lastOpposingTeam = loserTeam;
+        this.showVoting = true;
+      }
+
+      // Verificar si la votación está completa
+      const totalVotes = this.currentVotes.length;
+      const requiredVotes = winnerTeam.players.length;
+
+      console.log(`Votes: ${totalVotes}/${requiredVotes}`);
+
+      if (totalVotes === requiredVotes) {
+        console.log('Voting complete');
+        this.isVotingComplete = true;
+      }
     }
   }
 
-  private handleMatchCompletion(match: Match) {
+  private async handleMatchCompletion(match: Match) {
+    console.log('Handling match completion', match);
+
+    // Actualizar estado del equipo
     const teams = [match.team1, match.team2];
     this.currentTeam = teams.find((team) =>
       team.players.some((player) => player.id === this.currentPlayer.id)
     );
 
-    if (this.currentTeam?.status === 'eliminated') {
-      this.currentTeam = null;
-      this.initTeamState();
-    } else {
-      this.getAvailableTeams();
+    // Si el modal de votación está abierto, marcar como completo
+    if (this.showVoting) {
+      this.isVotingComplete = true;
+      // No hacemos cleanup aquí, esperamos a que el usuario cierre el modal
+      return;
     }
 
-    this.onVotingComplete();
+    // Si no hay modal de votación, proceder con la limpieza
+    await this.cleanupAfterMatch();
   }
 
   // State Transition Methods
@@ -527,9 +550,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   async onTeamLeft() {
-    this.unsubscribe('availableTeams');
-    this.unsubscribe('matchStatus');
-
     this.currentTeam = null;
     this.availableTeams = [];
     await this.initSoloState();
@@ -558,10 +578,16 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   async leaveTeam() {
+    this.unsubscribe('availableTeams');
+    this.unsubscribe('matchStatus');
     this.gameService.leaveTeam().subscribe({
       next: async (result) => {
+        console.log(result);
+
         if (result) {
           await this.onTeamLeft();
+        } else {
+          this.initTeamState();
         }
       },
       error: (err) => {
@@ -571,6 +597,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   async teamFounded(team: Team) {
+    this.teamFound = team;
     await this.onTeamJoined(team);
   }
 
@@ -616,28 +643,65 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.authService.logout();
   }
 
-  // Match Related Methods
-  onMatchComplete(losingTeam: Team) {
-    this.challengingTeam = null;
-    this.lastOpposingTeam = losingTeam;
-    this.showVoting = true;
-  }
+  handleVoteSubmit(playerId: string) {
+    if (this.myVote) {
+      console.log('Already voted');
+      return;
+    }
 
-  onVoteSubmitted(player: Player) {
     const input = {
       matchId: this.match?.id,
-      forPlayerId: player.id,
+      forPlayerId: playerId,
     };
-    this.matchesService.createVote(input).pipe(take(1)).subscribe();
+
+    this.matchesService
+      .createVote(input)
+      .pipe(take(1))
+      .subscribe({
+        next: (response) => {
+          const vote = response.data?.createVote;
+          console.log('Vote created:', vote);
+
+          if (vote) {
+            // No actualizamos currentVotes aquí, se actualizará a través de la suscripción
+            this.myVote = {
+              id: vote.id,
+              fromPlayer: vote.fromPlayer,
+              forPlayer: vote.forPlayer,
+            };
+          }
+        },
+        error: (err) => {
+          console.error('Error submitting vote:', err);
+        },
+      });
   }
 
-  onVotingComplete() {
+  handleVotingComplete() {
+    console.log('Voting complete cleanup');
     this.showVoting = false;
     this.canVote = false;
-    this.match = null;
-    this.lastOpposingTeam = null;
     this.currentVotes = [];
+    this.lastOpposingTeam = null;
+    this.isVotingComplete = false;
+    this.match = null;
+    this.myVote = undefined;
+
+    // Limpiar suscripciones y actualizar estado
     this.unsubscribe('matchStatus');
+    this.cleanupAfterMatch();
+  }
+
+  private async cleanupAfterMatch() {
+    if (
+      this.currentTeam?.status === 'eliminated' ||
+      this.currentTeam?.status === 'in-match'
+    ) {
+      this.currentTeam = null;
+      await this.initTeamState();
+    } else {
+      await this.getAvailableTeams();
+    }
   }
 
   // Helper Methods
@@ -675,43 +739,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
     setTimeout(() => {
       this.match = match;
     }, 9500);
-  }
-
-  private setMatch(match: Match) {
-    this.match = match;
-    if (match.status === 'VOTING' && match.winner && match.votes) {
-      const team1 = match.team1;
-      const team2 = match.team2;
-      const winnerTeam = match.winner.id;
-      const loserTeam = winnerTeam === team1.id ? team2 : team1;
-
-      if (winnerTeam === this.currentTeam?.id) {
-        this.canVote = true;
-      }
-
-      this.myVote = match.votes.find(
-        (v) => v.fromPlayer.id === this.currentPlayer.id
-      );
-      if (match.votes?.length > 0) {
-        this.currentVotes = match.votes;
-      }
-      this.onMatchComplete(loserTeam);
-    }
-  }
-
-  private setupVotingState(match: Match) {
-    if (match.winner && match.votes) {
-      const winnerTeam = match.winner.id;
-      const loserTeam =
-        winnerTeam === match.team1.id ? match.team2 : match.team1;
-
-      this.canVote = winnerTeam === this.currentTeam?.id;
-      this.myVote = match.votes.find(
-        (v) => v.fromPlayer.id === this.currentPlayer.id
-      );
-      this.currentVotes = match.votes;
-      this.onMatchComplete(loserTeam);
-    }
   }
 
   private unsubscribeAll() {

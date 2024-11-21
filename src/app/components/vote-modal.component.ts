@@ -1,4 +1,12 @@
-import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
+import {
+  Component,
+  Input,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnDestroy,
+  SimpleChanges,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Team, Player, Vote } from '../models/types';
 
@@ -8,128 +16,394 @@ import { Team, Player, Vote } from '../models/types';
   imports: [CommonModule],
   template: `
     <div
-      class="fixed inset-0 bg-black/95 flex items-center justify-center z-50 animate-fadeIn"
+      class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center"
     >
-      <div class="max-w-2xl w-full mx-4 text-center">
-        <div class="text-6xl gold-gradient font-bold mb-8">
-          {{ canVote ? 'VICTORY!' : 'DEFEAT!' }}
-        </div>
-
-        <div class="text-xl mb-4">
-          {{
-            canVote
-              ? 'Choose a player from the opposing team to recruit'
-              : 'Opposing team is voting'
-          }}
-        </div>
-
-        <div
-          *ngIf="selectedPlayer && canVote"
-          class="mb-8 text-lg text-gold animate-fadeIn"
-        >
-          Selected: {{ selectedPlayer.username }}
-        </div>
-
-        <div class="grid grid-cols-2 gap-8 mb-8">
+      <div class="max-w-lg w-full mx-4 relative">
+        <!-- Animación de partículas doradas -->
+        <div class="absolute inset-0 overflow-hidden">
           <div
-            *ngFor="let player of opposingTeam.players"
-            class="player-card transition-all duration-300"
-            [class.selected-player]="
-              canVote && selectedPlayer?.id === player.id
-            "
-            [class.opacity-50]="
-              canVote && hasVoted && selectedPlayer?.id !== player.id
-            "
-            (click)="canVote ? selectPlayer(player) : null"
+            *ngFor="let i of [1, 2, 3, 4, 5]"
+            class="particle absolute w-2 h-2 bg-gold rounded-full"
+            [style.animation-delay]="i * 0.2 + 's'"
+          ></div>
+        </div>
+
+        <!-- Contenido principal -->
+        <div
+          class="bg-black/80 border border-gold/30 rounded-lg p-6 text-center animate-scale-in"
+        >
+          <div class="relative">
+            <!-- Círculo animado -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <div
+                class="w-32 h-32 rounded-full border-4 border-gold/30 animate-pulse"
+              ></div>
+              <div
+                class="absolute w-36 h-36 rounded-full border-2 border-gold/20 animate-spin-slow"
+              ></div>
+            </div>
+
+            <!-- Icono central -->
+            <div class="relative z-10 mb-6 transform animate-bounce-in">
+              <span class="material-symbols-outlined text-6xl text-gold mb-4">
+                {{ getIcon() }}
+              </span>
+              <h2 class="text-2xl font-bold gold-gradient mb-2">
+                {{ getTitle() }}
+              </h2>
+              <p class="text-gray-400">
+                {{ getStatusText() }}
+              </p>
+            </div>
+          </div>
+
+          <!-- Timer -->
+<!--           <div
+            *ngIf="canVote && !hasVoted && timeLeft > 0"
+            class="mb-6 text-center"
           >
+            <div class="text-2xl text-gold">{{ timeLeft }}s</div>
+            <div class="w-full bg-gold/20 h-2 rounded-full mt-2">
+              <div
+                class="bg-gold h-full rounded-full transition-all duration-1000"
+                [style.width.%]="(timeLeft / votingTime) * 100"
+              ></div>
+            </div>
+          </div> -->
+
+          <!-- Players Grid -->
+          <div class="mt-8 space-y-4 animate-slide-up" *ngIf="!showingResults">
+            <div class="grid grid-cols-2 gap-4">
+              <div
+                *ngFor="let player of opposingTeam.players"
+                class="relative bg-black/30 p-4 rounded-lg border transition-all duration-300"
+                [class.border-selected]="
+                  canVote && selectedPlayer?.id === player.id
+                "
+                [class.border-unselected]="
+                  canVote && selectedPlayer?.id !== player.id
+                "
+                [class.border-inactive]="!canVote"
+                [class.hover-border]="canVote && !hasVoted"
+                [class.cursor-pointer]="canVote && !hasVoted"
+                [class.transform]="canVote && selectedPlayer?.id === player.id"
+                [class.hover:scale-105]="canVote && !hasVoted"
+                (click)="canVote && !hasVoted ? selectPlayer(player) : null"
+              >
+                <!-- Overlay de selección -->
+                <div
+                  *ngIf="canVote && selectedPlayer?.id === player.id"
+                  class="absolute inset-0 bg-gold/10 rounded-lg animate-pulse-slow"
+                ></div>
+
+                <div class="relative z-10">
+                  <div class="relative mb-3">
+                    <img
+                      [src]="player.avatar"
+                      [alt]="player.username"
+                      class="w-16 h-16 rounded-full mx-auto object-cover"
+                    />
+
+                    <!-- Indicador de votos -->
+                    <div
+                      *ngIf="getVoteCount(player) > 0"
+                      class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-gold/20 
+                                flex items-center justify-center text-sm text-gold animate-bounce-in"
+                    >
+                      {{ getVoteCount(player) }}
+                    </div>
+                  </div>
+
+                  <div class="font-medium">{{ player.username }}</div>
+                  <div class="text-sm text-gold">{{ player.rank }}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Resultado Final -->
+          <div *ngIf="showingResults" class="mt-8 space-y-6 animate-slide-up">
             <div class="relative">
               <img
-                [src]="player.avatar"
-                class="w-24 h-24 rounded-full mx-auto mb-4"
+                [src]="getWinningPlayer()?.avatar"
+                class="w-24 h-24 rounded-full mx-auto border-4 border-gold animate-winner-glow"
               />
-              <div
-                *ngIf="canVote && selectedPlayer?.id === player.id"
-                class="absolute -top-2 -right-2 bg-gold/20 rounded-full p-2 animate-fadeIn"
-              >
-                <span class="material-symbols-outlined text-gold">
-                  check_circle
+              <div class="absolute -top-4 -right-4 transform rotate-12">
+                <span
+                  class="material-symbols-outlined text-4xl text-gold animate-bounce"
+                >
+                  military_tech
                 </span>
               </div>
             </div>
-            <div class="text-xl font-bold">{{ player.username }}</div>
-            <div class="text-gold">{{ player.rank }}</div>
 
-            <div
-              *ngIf="getVotesForPlayer(player)"
-              class="mt-4 text-sm text-gray-400"
-            >
-              Votes: {{ getVotesForPlayer(player) }}
+            <div>
+              <h3 class="text-2xl font-bold gold-gradient mb-2">
+                {{ getWinningPlayer()?.username }}
+              </h3>
+              <p class="text-gold text-lg mb-1">
+                {{
+                  isComplete
+                    ? 'Has joined your ranks!'
+                    : 'Most Valuable Player!'
+                }}
+              </p>
+              <p class="text-gray-400">
+                {{
+                  isComplete
+                    ? 'Team Size: ' +
+                      currentTeam.players.length +
+                      ' → ' +
+                      (currentTeam.players.length + 1)
+                    : 'Received ' + getVoteCount(getWinningPlayer()) + ' votes'
+                }}
+              </p>
             </div>
-          </div>
-        </div>
 
-        <button
-          *ngIf="canVote && !hasVoted"
-          class="gold-button text-xl px-12"
-          [disabled]="!selectedPlayer"
-          [class.opacity-50]="!selectedPlayer"
-          (click)="vote()"
-        >
-          Vote
-        </button>
-
-        <div *ngIf="!canVote" class="text-xl text-gray-400">
-          Waiting for opposing team to finish voting...
-        </div>
-
-        <div *ngIf="isVotingComplete" class="mt-8 animate-fadeIn">
-          <div class="text-2xl gold-gradient font-bold mb-4">
-            {{ winningPlayer?.username }} has joined your team!
+            <button
+              *ngIf="isComplete"
+              (click)="onVotingComplete.emit()"
+              class="mt-4 gold-button px-8 py-2 text-lg animate-fade-in hover:scale-105 
+                     active:scale-95 transition-all duration-200"
+            >
+              Continue
+            </button>
           </div>
-          <div class="text-lg text-gray-400 mb-4">
-            Team Size: {{ currentTeam.players.length }} →
-            {{ currentTeam.players.length + 1 }}
-          </div>
-          <button class="gold-button text-xl px-12" (click)="continue.emit()">
-            Continue
+
+          <!-- Botón de Votación -->
+          <button
+            *ngIf="canVote && !hasVoted"
+            (click)="submitVote()"
+            class="mt-8 gold-button px-8 py-2 text-lg animate-fade-in"
+            [class.opacity-50]="!selectedPlayer"
+            [disabled]="!selectedPlayer"
+          >
+            Cast Your Vote
           </button>
+
+          <!-- Estado de Espera -->
+          <div *ngIf="hasVoted && !showingResults" class="mt-8 animate-pulse">
+            <span class="material-symbols-outlined text-2xl text-gold"
+              >pending</span
+            >
+            <p class="text-gray-400 mt-2">Waiting for other votes...</p>
+          </div>
         </div>
       </div>
     </div>
   `,
   styles: [
     `
-      .selected-player {
-        border: 2px solid var(--gold);
-        transform: translateY(-4px);
-        box-shadow: 0 4px 20px rgba(255, 215, 0, 0.2);
+      .gold-gradient {
+        background: linear-gradient(to right, #ffd700, #b8860b);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .gold-button {
+        background: linear-gradient(to right, #ffd700, #b8860b);
+        color: black;
+        font-weight: 500;
+        border-radius: 0.5rem;
+      }
+
+      .gold-button:hover:not(:disabled) {
+        transform: scale(1.02);
+        filter: brightness(1.1);
+      }
+
+      .gold-button:active:not(:disabled) {
+        transform: scale(0.98);
+      }
+
+      .border-selected {
+        border-color: var(--color-gold);
+      }
+
+      .border-unselected {
+        border-color: rgba(255, 215, 0, 0.1);
+      }
+
+      .border-inactive {
+        border-color: rgba(255, 215, 0, 0.3);
+      }
+
+      .hover-border:hover {
+        border-color: rgba(255, 215, 0, 0.5);
+      }
+
+      @keyframes winner-glow {
+        0%,
+        100% {
+          box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+        }
+        50% {
+          box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
+        }
+      }
+
+      .animate-winner-glow {
+        animation: winner-glow 2s ease-in-out infinite;
+      }
+
+      @keyframes pulse-slow {
+        0%,
+        100% {
+          opacity: 0.1;
+        }
+        50% {
+          opacity: 0.3;
+        }
+      }
+
+      .animate-pulse-slow {
+        animation: pulse-slow 2s ease-in-out infinite;
+      }
+
+      @keyframes scale-in {
+        0% {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes bounce-in {
+        0% {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        70% {
+          transform: scale(0.9);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
+      }
+
+      @keyframes slide-up {
+        0% {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+
+      @keyframes fade-in {
+        0% {
+          opacity: 0;
+        }
+        100% {
+          opacity: 1;
+        }
+      }
+
+      @keyframes particle-float {
+        0% {
+          transform: translate(0, 0) rotate(0deg);
+          opacity: 0;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          transform: translate(var(--tx), var(--ty)) rotate(360deg);
+          opacity: 0;
+        }
+      }
+
+      .animate-scale-in {
+        animation: scale-in 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .animate-bounce-in {
+        animation: bounce-in 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .animate-slide-up {
+        animation: slide-up 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        animation-delay: 0.3s;
+        opacity: 0;
+        animation-fill-mode: forwards;
+      }
+
+      .animate-fade-in {
+        animation: fade-in 0.5s ease-out;
+        animation-fill-mode: forwards;
+        opacity: 0;
+      }
+
+      .particle {
+        --tx: 0px;
+        --ty: 0px;
+        animation: particle-float 2s ease-out infinite;
+        opacity: 0;
+      }
+
+      .particle:nth-child(1) {
+        --tx: 100px;
+        --ty: -100px;
+      }
+      .particle:nth-child(2) {
+        --tx: -80px;
+        --ty: -120px;
+      }
+      .particle:nth-child(3) {
+        --tx: 120px;
+        --ty: 80px;
+      }
+      .particle:nth-child(4) {
+        --tx: -100px;
+        --ty: 90px;
+      }
+      .particle:nth-child(5) {
+        --tx: 90px;
+        --ty: 110px;
+      }
+
+      :host {
+        --color-gold: #ffd700;
       }
     `,
   ],
 })
-export class VoteModalComponent implements OnInit {
+export class VoteModalComponent implements OnInit, OnDestroy {
   @Input() opposingTeam!: Team;
   @Input() currentTeam!: Team;
-  @Input() votes: Vote[] | null | undefined = null;
   @Input() canVote = false;
-  @Output() voteSubmitted = new EventEmitter<Player>();
-  @Output() continue = new EventEmitter<void>();
+  @Input() submittedVotes: Vote[] = [];
+  @Input() isComplete = false;
+  @Output() onVoteSubmit = new EventEmitter<string>();
+  @Output() onVotingComplete = new EventEmitter<void>();
 
   selectedPlayer: Player | null = null;
   hasVoted = false;
-  isVotingComplete = false;
-  winningPlayer: Player | null = null;
+  showingResults = false;
+  private resultsTimer: any;
 
-  @Input() myVote: Vote | undefined = undefined;
+  ngOnInit() {
+    this.checkVotingStatus();
+  }
 
-  ngOnInit(): void {
-    if (this.votes && this.votes?.length > 0) {
-      this.myVote ? (this.hasVoted = true) : (this.hasVoted = false);
-      this.opposingTeam.players.forEach((player) => {
-        if (player.id === this.myVote?.forPlayer.id) {
-          this.selectedPlayer = player;
-        }
-      });
+  ngOnDestroy() {
+    if (this.resultsTimer) {
+      clearTimeout(this.resultsTimer);
+    }
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['submittedVotes'] || changes['isComplete']) {
+      this.checkVotingStatus();
     }
   }
 
@@ -139,39 +413,93 @@ export class VoteModalComponent implements OnInit {
     }
   }
 
-  vote() {
-    if (this.selectedPlayer && this.canVote) {
+  submitVote() {
+    if (this.selectedPlayer && this.canVote && !this.hasVoted) {
       this.hasVoted = true;
-      this.voteSubmitted.emit(this.selectedPlayer);
+      this.onVoteSubmit.emit(this.selectedPlayer.id);
     }
   }
 
-  getVotesForPlayer(player: Player): number | undefined {
-    return this.votes?.filter((v) => v.forPlayer.id === player.id).length;
+  private checkVotingStatus() {
+    const expectedVotes = this.currentTeam.players.length;
+    const actualVotes = this.submittedVotes.length;
+
+    console.log(
+      `Checking voting status: ${actualVotes}/${expectedVotes} votes`
+    );
+    console.log('Is complete:', this.isComplete);
+
+    // Si ya estamos mostrando resultados, no hacer nada
+    if (this.showingResults) {
+      return;
+    }
+
+    // Mostrar resultados si tenemos todos los votos o el match está completo
+    if (actualVotes >= expectedVotes || this.isComplete) {
+      console.log('Showing results');
+      this.showingResults = true;
+
+      // Si el match está completo, no cerrar automáticamente
+      if (!this.isComplete) {
+        this.resultsTimer = setTimeout(() => {
+          this.onVotingComplete.emit();
+        }, 3000);
+      }
+    }
   }
 
-  /*   private calculateWinner() {
+  getVoteCount(player: Player | null): number {
+    if (!player) return 0;
+    return this.submittedVotes.filter((v) => v.forPlayer.id === player.id)
+      .length;
+  }
+
+  getWinningPlayer(): Player | null {
+    if (!this.submittedVotes.length) return null;
+
     const voteCounts = new Map<string, number>();
-    const playerMap = new Map<string, Player>();
     let maxVotes = 0;
-    const topVotedPlayers: Player[] = [];
+    let winningPlayerId = '';
 
-    this.votes.forEach((vote) => {
-      const playerId = vote.forPlayer.id || '';
-      playerMap.set(playerId, vote.forPlayer);
-      const count = (voteCounts.get(playerId) || 0) + 1;
-      voteCounts.set(playerId, count);
+    // Contar votos
+    this.submittedVotes.forEach((vote) => {
+      const playerId = vote.forPlayer.id;
+      const currentCount = (voteCounts.get(playerId) || 0) + 1;
+      voteCounts.set(playerId, currentCount);
 
-      if (count > maxVotes) {
-        maxVotes = count;
-        topVotedPlayers.length = 0;
-        topVotedPlayers.push(vote.forPlayer);
-      } else if (count === maxVotes) {
-        topVotedPlayers.push(vote.forPlayer);
+      if (currentCount > maxVotes) {
+        maxVotes = currentCount;
+        winningPlayerId = playerId;
       }
     });
 
-    const winnerIndex = Math.floor(Math.random() * topVotedPlayers.length);
-    this.winningPlayer = topVotedPlayers[winnerIndex];
-  } */
+    return (
+      this.opposingTeam.players.find((p) => p.id === winningPlayerId) || null
+    );
+  }
+
+  getIcon(): string {
+    if (this.showingResults) return 'military_tech';
+    if (this.canVote) return this.hasVoted ? 'how_to_vote' : 'pending';
+    return 'pending';
+  }
+
+  getTitle(): string {
+    if (this.showingResults) return 'MVP SELECTED!';
+    if (this.canVote)
+      return this.hasVoted ? 'VOTE SUBMITTED!' : 'CHOOSE YOUR MVP!';
+    return 'VOTES IN PROGRESS';
+  }
+
+  getStatusText(): string {
+    if (this.showingResults) {
+      return 'The most valuable player has been chosen!';
+    }
+    if (this.canVote) {
+      return this.hasVoted
+        ? 'Waiting for other votes...'
+        : 'Select the most valuable player';
+    }
+    return 'The winning team is casting their votes...';
+  }
 }
