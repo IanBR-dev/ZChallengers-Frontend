@@ -134,7 +134,10 @@ import { MatchesService } from '../../services/matches.service';
             <ng-container *ngIf="!currentTeam && currentPlayer">
               <app-player-card [player]="currentPlayer" class="mb-6">
               </app-player-card>
-              <app-queue (teamFounded)="teamFounded($event)"></app-queue>
+              <app-queue
+                *ngIf="!currentTeam"
+                (teamFounded)="teamFounded($event)"
+              ></app-queue>
             </ng-container>
           </div>
 
@@ -377,8 +380,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
       .matchStatus()
       .subscribe({
         next: (match) => {
-          console.log(match);
-
           this.handleMatchUpdate(match);
         },
       });
@@ -454,7 +455,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   private async handleMatchUpdate(match: Match) {
-    console.log(match);
     this.match = match;
     if (match.status === 'IN_PROGRESS') {
       this.handleMatchInProgress(match);
@@ -466,8 +466,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   private handleMatchInProgress(match: Match) {
-    console.log('progress');
-
     const myTeam = this.currentTeam?.id;
     this.challengingTeam = match.team1;
     this.challengedTeam = match.team2;
@@ -479,7 +477,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   private handleMatchVoting(match: Match) {
-    console.log('Handling match voting', match);
     if (match.winner && match.votes) {
       const team1 = match.team1;
       const team2 = match.team2;
@@ -492,7 +489,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
       // Actualizar votos solo si son diferentes
       if (JSON.stringify(this.currentVotes) !== JSON.stringify(match.votes)) {
-        console.log('Updating votes:', match.votes);
         this.currentVotes = [...match.votes];
 
         // Actualizar mi voto si existe
@@ -511,18 +507,13 @@ export class LobbyComponent implements OnInit, OnDestroy {
       const totalVotes = this.currentVotes.length;
       const requiredVotes = winnerTeam.players.length;
 
-      console.log(`Votes: ${totalVotes}/${requiredVotes}`);
-
       if (totalVotes === requiredVotes) {
-        console.log('Voting complete');
         this.isVotingComplete = true;
       }
     }
   }
 
   private async handleMatchCompletion(match: Match) {
-    console.log('Handling match completion', match);
-
     // Actualizar estado del equipo
     const teams = [match.team1, match.team2];
     this.currentTeam = teams.find((team) =>
@@ -582,8 +573,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.unsubscribe('matchStatus');
     this.gameService.leaveTeam().subscribe({
       next: async (result) => {
-        console.log(result);
-
         if (result) {
           await this.onTeamLeft();
         } else {
@@ -645,7 +634,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   handleVoteSubmit(playerId: string) {
     if (this.myVote) {
-      console.log('Already voted');
       return;
     }
 
@@ -660,8 +648,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
       .subscribe({
         next: (response) => {
           const vote = response.data?.createVote;
-          console.log('Vote created:', vote);
-
           if (vote) {
             // No actualizamos currentVotes aquí, se actualizará a través de la suscripción
             this.myVote = {
@@ -678,7 +664,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
   }
 
   handleVotingComplete() {
-    console.log('Voting complete cleanup');
     this.showVoting = false;
     this.canVote = false;
     this.currentVotes = [];
@@ -698,9 +683,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
       this.currentTeam?.status === 'in-match'
     ) {
       this.currentTeam = null;
-      await this.initTeamState();
+      await this.initSoloState();
     } else {
-      await this.getAvailableTeams();
+      await this.initTeamState();
     }
   }
 

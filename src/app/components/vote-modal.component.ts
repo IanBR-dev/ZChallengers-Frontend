@@ -45,31 +45,32 @@ import { Team, Player, Vote } from '../models/types';
 
             <!-- Icono central -->
             <div class="relative z-10 mb-6 transform animate-bounce-in">
-              <span class="material-symbols-outlined text-6xl text-gold mb-4">
+              <span
+                class="material-symbols-outlined text-6xl mb-4"
+                [class.text-gold]="
+                  currentTeam && currentTeam.id !== opposingTeam.id
+                "
+                [class.text-red-500]="
+                  !currentTeam || currentTeam.id === opposingTeam.id
+                "
+              >
                 {{ getIcon() }}
               </span>
-              <h2 class="text-2xl font-bold gold-gradient mb-2">
+              <h2
+                class="text-2xl font-bold mb-2"
+                [class.gold-gradient]="currentTeam"
+                [class.text-red-500]="!currentTeam"
+              >
                 {{ getTitle() }}
               </h2>
-              <p class="text-gray-400">
+              <p
+                class="text-gray-700 font-medium"
+                *ngIf="currentTeam && currentTeam.id !== opposingTeam.id"
+              >
                 {{ getStatusText() }}
               </p>
             </div>
           </div>
-
-          <!-- Timer -->
-<!--           <div
-            *ngIf="canVote && !hasVoted && timeLeft > 0"
-            class="mb-6 text-center"
-          >
-            <div class="text-2xl text-gold">{{ timeLeft }}s</div>
-            <div class="w-full bg-gold/20 h-2 rounded-full mt-2">
-              <div
-                class="bg-gold h-full rounded-full transition-all duration-1000"
-                [style.width.%]="(timeLeft / votingTime) * 100"
-              ></div>
-            </div>
-          </div> -->
 
           <!-- Players Grid -->
           <div class="mt-8 space-y-4 animate-slide-up" *ngIf="!showingResults">
@@ -123,7 +124,10 @@ import { Team, Player, Vote } from '../models/types';
 
           <!-- Resultado Final -->
           <div *ngIf="showingResults" class="mt-8 space-y-6 animate-slide-up">
-            <div class="relative">
+            <div
+              class="relative"
+              *ngIf="currentTeam && currentTeam.id !== opposingTeam.id"
+            >
               <img
                 [src]="getWinningPlayer()?.avatar"
                 class="w-24 h-24 rounded-full mx-auto border-4 border-gold animate-winner-glow"
@@ -138,23 +142,19 @@ import { Team, Player, Vote } from '../models/types';
             </div>
 
             <div>
-              <h3 class="text-2xl font-bold gold-gradient mb-2">
+              <h3
+                class="text-2xl font-bold gold-gradient mb-2"
+                *ngIf="currentTeam && currentTeam.id !== opposingTeam.id"
+              >
                 {{ getWinningPlayer()?.username }}
               </h3>
               <p class="text-gold text-lg mb-1">
-                {{
-                  isComplete
-                    ? 'Has joined your ranks!'
-                    : 'Most Valuable Player!'
-                }}
+                {{ isComplete ? getBodyText() : 'Most Valuable Player!' }}
               </p>
               <p class="text-gray-400">
                 {{
                   isComplete
-                    ? 'Team Size: ' +
-                      currentTeam.players.length +
-                      ' → ' +
-                      (currentTeam.players.length + 1)
+                    ? getFooterText()
                     : 'Received ' + getVoteCount(getWinningPlayer()) + ' votes'
                 }}
               </p>
@@ -391,8 +391,11 @@ export class VoteModalComponent implements OnInit, OnDestroy {
   showingResults = false;
   private resultsTimer: any;
 
+  myTeam!: Team;
+
   ngOnInit() {
     this.checkVotingStatus();
+    this.myTeam = { ...this.currentTeam };
   }
 
   ngOnDestroy() {
@@ -424,11 +427,6 @@ export class VoteModalComponent implements OnInit, OnDestroy {
     const expectedVotes = this.currentTeam.players.length;
     const actualVotes = this.submittedVotes.length;
 
-    console.log(
-      `Checking voting status: ${actualVotes}/${expectedVotes} votes`
-    );
-    console.log('Is complete:', this.isComplete);
-
     // Si ya estamos mostrando resultados, no hacer nada
     if (this.showingResults) {
       return;
@@ -436,7 +434,6 @@ export class VoteModalComponent implements OnInit, OnDestroy {
 
     // Mostrar resultados si tenemos todos los votos o el match está completo
     if (actualVotes >= expectedVotes || this.isComplete) {
-      console.log('Showing results');
       this.showingResults = true;
 
       // Si el match está completo, no cerrar automáticamente
@@ -479,13 +476,27 @@ export class VoteModalComponent implements OnInit, OnDestroy {
   }
 
   getIcon(): string {
-    if (this.showingResults) return 'military_tech';
+    if (this.showingResults) {
+      if (this.currentTeam) {
+        return this.currentTeam.id === this.opposingTeam.id
+          ? 'warning'
+          : 'military_tech';
+      }
+      return !this.currentTeam ? 'warning' : 'military_tech';
+    }
     if (this.canVote) return this.hasVoted ? 'how_to_vote' : 'pending';
     return 'pending';
   }
 
   getTitle(): string {
-    if (this.showingResults) return 'MVP SELECTED!';
+    if (this.showingResults) {
+      if (this.currentTeam) {
+        return this.currentTeam.id === this.opposingTeam.id
+          ? 'DEFEAT!'
+          : 'RECRUITMENT COMPLETE!';
+      }
+      return !this.currentTeam ? 'TEAM ELIMINATED!' : 'RECRUITMENT COMPLETE!';
+    }
     if (this.canVote)
       return this.hasVoted ? 'VOTE SUBMITTED!' : 'CHOOSE YOUR MVP!';
     return 'VOTES IN PROGRESS';
@@ -493,7 +504,14 @@ export class VoteModalComponent implements OnInit, OnDestroy {
 
   getStatusText(): string {
     if (this.showingResults) {
-      return 'The most valuable player has been chosen!';
+      if (this.currentTeam) {
+        return this.currentTeam.id === this.opposingTeam.id
+          ? 'Your team has been defeated. Time to regroup!'
+          : 'A new warrior joins your ranks!';
+      }
+      return !this.currentTeam
+        ? 'Your team has been disbanded. Time to regroup!'
+        : 'A new warrior joins your ranks!';
     }
     if (this.canVote) {
       return this.hasVoted
@@ -501,5 +519,37 @@ export class VoteModalComponent implements OnInit, OnDestroy {
         : 'Select the most valuable player';
     }
     return 'The winning team is casting their votes...';
+  }
+
+  getFooterText(): string {
+    if (this.currentTeam) {
+      return this.currentTeam.id === this.opposingTeam.id
+        ? 'Team Size: ' +
+            (this.currentTeam.players.length + 1) +
+            ' → ' +
+            this.currentTeam.players.length
+        : 'Team Size: ' +
+            (this.currentTeam.players.length - 1) +
+            ' → ' +
+            this.currentTeam.players.length;
+    }
+    return (
+      'Team Size: ' +
+      this.myTeam.players.length +
+      ' → ' +
+      (this.myTeam.players.length - 1)
+    );
+  }
+
+  getBodyText(): string {
+    if (this.currentTeam) {
+      return this.currentTeam.id === this.opposingTeam.id
+        ? 'Your team has been defeated. Time to regroup!'
+        : 'Has joined your ranks!';
+    }
+    if (!this.currentTeam) {
+      return 'Your team has been disbanded. Time to regroup!';
+    }
+    return 'Most Valuable Player!';
   }
 }

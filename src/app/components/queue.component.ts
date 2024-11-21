@@ -1,4 +1,10 @@
-import { Component, Output, EventEmitter, OnInit } from '@angular/core';
+import {
+  Component,
+  Output,
+  EventEmitter,
+  OnInit,
+  OnDestroy,
+} from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { LoadingSpinnerComponent } from '../shared/components/loading-spinner.component';
 import { Team } from '../models/types';
@@ -41,13 +47,15 @@ import { Subscription } from 'rxjs';
     `,
   ],
 })
-export class QueueComponent implements OnInit {
+export class QueueComponent implements OnInit, OnDestroy {
   @Output() teamFounded = new EventEmitter<Team>();
 
   isLoading = false;
   inQueue = false;
 
-  private teamFoundSubscription: Subscription[] = [];
+  private subscriptions = {
+    teamFound: new Subscription(),
+  };
 
   constructor(private gameService: QueueService) {}
 
@@ -60,14 +68,15 @@ export class QueueComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.teamFoundSubscription.push(
-      this.gameService.teamFound().subscribe((team) => {
+    this.unsubscribe('teamFound');
+    this.subscriptions.teamFound = this.gameService
+      .teamFound()
+      .subscribe((team) => {
         if (team) {
           this.teamFounded.emit(team);
           this.inQueue = false;
         }
-      })
-    );
+      });
   }
 
   private joinQueue() {
@@ -99,5 +108,22 @@ export class QueueComponent implements OnInit {
         this.isLoading = false;
       },
     });
+  }
+
+  ngOnDestroy(): void {
+    this.unsubscribeAll();
+  }
+
+  private unsubscribeAll() {
+    Object.values(this.subscriptions).forEach((sub) => {
+      if (sub) sub.unsubscribe();
+    });
+  }
+
+  private unsubscribe(key: keyof typeof this.subscriptions) {
+    if (this.subscriptions[key]) {
+      this.subscriptions[key].unsubscribe();
+      this.subscriptions[key] = new Subscription();
+    }
   }
 }
