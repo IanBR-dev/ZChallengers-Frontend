@@ -57,7 +57,7 @@ import { MatchesService } from '../../services/matches.service';
       <app-loading-state message="Loading lobby..."></app-loading-state>
     </div>
 
-    <div class="min-h-screen bg-black">
+    <div class="min-h-screen" style="background: var(--bg-dark)">
       <!-- Header -->
       <app-lobby-header
         [invitations]="invitations"
@@ -114,15 +114,21 @@ import { MatchesService } from '../../services/matches.service';
             >
             </app-invite-button>
           </div>
+
           <!-- Current Team/Player Info -->
-          <div class="gold-border rounded-lg p-4 md:p-6 bg-black/50 mb-8">
-            <h2 class="text-xl md:text-2xl gold-gradient mb-4">
+          <div class="glass rounded-lg p-4 md:p-6 mb-8">
+            <h2 class="text-xl md:text-2xl blue-gradient mb-4">
               {{ currentTeam ? 'Your Team' : 'Solo Player' }}
             </h2>
 
             <ng-container *ngIf="currentTeam">
               <div class="mb-4">
-                <h3 class="text-lg md:text-xl mb-2">{{ currentTeam.name }}</h3>
+                <h3
+                  class="text-lg md:text-xl mb-2"
+                  style="color: var(--text-primary)"
+                >
+                  {{ currentTeam.name }}
+                </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <app-player-card
                     *ngFor="let player of currentTeam.players"
@@ -133,7 +139,7 @@ import { MatchesService } from '../../services/matches.service';
                   </app-player-card>
                 </div>
               </div>
-              <button class="gold-button" (click)="leaveTeam()">
+              <button class="primary-button" (click)="leaveTeam()">
                 Leave Team
               </button>
             </ng-container>
@@ -191,45 +197,24 @@ import { MatchesService } from '../../services/matches.service';
   `,
   styles: [
     `
-      .gold-gradient {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      :host {
+        display: block;
       }
 
-      .gold-button {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        color: black;
-        font-weight: 500;
-        border-radius: 0.5rem;
-        padding: 0.5rem 1rem;
-        transition: all 200ms;
+      .primary-button {
+        @apply px-6 py-3 rounded font-semibold relative overflow-hidden;
+        background: linear-gradient(45deg, var(--dark-blue), var(--blue));
+        color: var(--text-primary);
+        transition: all 0.3s ease;
       }
 
-      .gold-button:hover {
-        transform: scale(1.02);
-        filter: brightness(1.1);
+      .primary-button:hover {
+        filter: brightness(1.2);
+        transform: translateY(-2px);
       }
 
-      .gold-button:active {
-        transform: scale(0.98);
-      }
-
-      .gold-border {
-        position: relative;
-        overflow: hidden;
-      }
-
-      .gold-border::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border: 1px solid transparent;
-        background: linear-gradient(to right, #ffd700, #b8860b) border-box;
-        -webkit-mask: linear-gradient(#fff 0 0) padding-box,
-          linear-gradient(#fff 0 0);
-        -webkit-mask-composite: destination-out;
-        mask-composite: exclude;
+      .primary-button:active {
+        transform: translateY(0);
       }
     `,
   ],

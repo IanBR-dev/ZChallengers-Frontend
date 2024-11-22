@@ -8,59 +8,94 @@ import { LoadingSpinnerComponent } from '../../../../shared/components/loading-s
   standalone: true,
   imports: [CommonModule, FormsModule, LoadingSpinnerComponent],
   template: `
-    <form
-      (ngSubmit)="onSubmit.emit()"
-      class="space-y-6 gold-border bg-black/50 p-8 rounded-lg backdrop-blur-sm 
-             transform transition-all duration-300 hover:shadow-gold/20 hover:shadow-lg"
-      [class.animate-shake]="error"
-    >
-      <ng-content></ng-content>
-
-      <div
-        *ngIf="error"
-        class="text-red-500 text-sm animate-fadeIn bg-red-500/10 p-3 rounded-lg border border-red-500/20"
-      >
-        {{ error }}
+    <form (ngSubmit)="handleSubmit()" class="space-y-6" #authForm="ngForm">
+      <!-- Form Fields -->
+      <div class="space-y-6">
+        <ng-content></ng-content>
       </div>
 
+      <!-- Error Message Area -->
+      <div class="h-[50px] flex items-center justify-center">
+        <div
+          *ngIf="error"
+          class="text-sm p-3 rounded border animate-fade-in w-full"
+          [style.color]="'var(--error)'"
+          [style.background]="'var(--error-light)'"
+          [style.border-color]="'var(--error)'"
+        >
+          {{ error }}
+        </div>
+      </div>
+
+      <!-- Submit Button -->
       <button
         type="submit"
-        class="gold-button w-full relative h-10 transform transition-all duration-200 
-               hover:scale-[1.02] active:scale-[0.98]"
-        [disabled]="isLoading"
+        class="submit-button"
+        [class.disabled]="!isValid || isLoading"
+        [disabled]="!isValid || isLoading"
       >
-        <span [class.opacity-0]="isLoading">{{ submitText }}</span>
-        <app-loading-spinner *ngIf="isLoading"></app-loading-spinner>
+        <div class="button-content" [class.loading]="isLoading">
+          <span class="button-text">{{ submitText }}</span>
+          <div class="spinner-container" *ngIf="isLoading">
+            <app-loading-spinner></app-loading-spinner>
+          </div>
+        </div>
+        <div class="button-background"></div>
       </button>
-
-      <div class="text-center text-gray-400">
-        <span>{{ toggleText }} </span>
-        <button
-          type="button"
-          (click)="onToggle.emit()"
-          class="text-gold hover:text-dark-gold transition-colors"
-        >
-          {{ toggleButtonText }}
-        </button>
-      </div>
     </form>
   `,
   styles: [
     `
-      @keyframes shake {
-        0%,
-        100% {
-          transform: translateX(0);
-        }
-        25% {
-          transform: translateX(-5px);
-        }
-        75% {
-          transform: translateX(5px);
-        }
+      .submit-button {
+        @apply w-full h-12 rounded font-bold relative overflow-hidden;
+        background: transparent;
+        border: 2px solid var(--primary);
+        color: var(--text-primary);
+        transition: all 0.3s ease;
       }
-      .animate-shake {
-        animation: shake 0.5s ease-in-out;
+
+      .button-content {
+        @apply relative z-10 flex items-center justify-center h-full;
+        transition: all 0.3s ease;
+      }
+
+      .button-background {
+        @apply absolute inset-0 z-0;
+        background: var(--primary);
+        transform: scaleX(0);
+        transform-origin: left;
+        transition: transform 0.3s ease;
+      }
+
+      .submit-button:not(.disabled):hover .button-background {
+        transform: scaleX(1);
+      }
+
+      .submit-button:not(.disabled):hover {
+        color: var(--text-primary);
+      }
+
+      .submit-button.disabled {
+        @apply opacity-50 cursor-not-allowed;
+        border-color: var(--text-muted);
+        color: var(--text-muted);
+      }
+
+      .button-content.loading {
+        transform: translateY(-100%);
+      }
+
+      .spinner-container {
+        @apply absolute inset-0 flex items-center justify-center;
+        transform: translateY(100%);
+      }
+
+      .loading .spinner-container {
+        transform: translateY(0);
+      }
+
+      .loading .button-text {
+        transform: translateY(-100%);
       }
     `,
   ],
@@ -69,8 +104,12 @@ export class AuthFormComponent {
   @Input() error = '';
   @Input() isLoading = false;
   @Input() submitText = '';
-  @Input() toggleText = '';
-  @Input() toggleButtonText = '';
-  @Output() onToggle = new EventEmitter<void>();
+  @Input() isValid = false;
   @Output() onSubmit = new EventEmitter<void>();
+
+  handleSubmit() {
+    if (this.isValid && !this.isLoading) {
+      this.onSubmit.emit();
+    }
+  }
 }
