@@ -9,7 +9,7 @@ import { PlayerCardComponent } from './components/player-card.component';
 import { TeamListComponent } from './components/team-list.component';
 import { AvailablePlayersModalComponent } from './components/available-players.component';
 import { InviteButtonComponent } from './components/invite-button.component';
-import { ChallengeModalComponent } from '../../components/challenge-modal.component';
+import { ChallengeModalComponent } from './components/challenge-modal.component';
 import { QueueComponent } from '../../components/queue.component';
 import { VoteModalComponent } from './components/vote-modal/vote-modal.component';
 import { TeamChallengeComponent } from '../../components/team-challenge.component';
