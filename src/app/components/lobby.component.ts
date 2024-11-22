@@ -49,17 +49,17 @@ import { MatchStatusComponent } from './match-status.component';
         (closeChallengeModal)="closeChallengeModal()"
       ></app-team-challenge>
 
-  <!--     <app-vote-modal -->
-  <!--       *ngIf="showVoti -->ng"
-  <!--       [canVote]="canV -->ote"
-  <!--       [myVote]="myVot -->e"
-  <!--       [opposingTeam]= -->"lastOpposingTeam!"
-  <!--       [currentTeam]=" -->currentTeam!"
-  <!--       [votes]="curren -->tVotes"
-  <!--       (voteSubmitted) -->="onVoteSubmitted($event)"
-  <!--       (continue)="onV -->otingComplete()"
-  <!--     > -->
-  <!--     </app-vote-modal> -->
+      <!--     <app-vote-modal -->
+      <!--       *ngIf="showVoti -->ng"
+      <!--       [canVote]="canV -->ote"
+      <!--       [myVote]="myVot -->e"
+      <!--       [opposingTeam]= -->"lastOpposingTeam!"
+      <!--       [currentTeam]=" -->currentTeam!"
+      <!--       [votes]="curren -->tVotes"
+      <!--       (voteSubmitted) -->="onVoteSubmitted($event)"
+      <!--       (continue)="onV -->otingComplete()"
+      <!--     > -->
+      <!--     </app-vote-modal> -->
       <!-- Header -->
       <header
         class="fixed top-0 left-0 right-0 bg-black/95 z-50 px-8 py-4 border-b border-gold/20"
@@ -111,7 +111,12 @@ import { MatchStatusComponent } from './match-status.component';
                 >
                   <div class="flex items-center gap-2">
                     <img [src]="player.avatar" class="w-8 h-8 rounded-full" />
-                    <span>{{ player.username }}</span>
+                    <span
+                      [class]="
+                        currentPlayer.id === player.id ? 'text-gold' : ''
+                      "
+                      >{{ player.username }}</span
+                    >
                     <span class="text-sm text-gray-400">{{ player.rank }}</span>
                     <span
                       *ngIf="player.id === currentTeam.captain.id"
@@ -133,7 +138,7 @@ import { MatchStatusComponent } from './match-status.component';
                     [src]="currentPlayer.avatar"
                     class="w-8 h-8 rounded-full"
                   />
-                  <span>{{ currentPlayer.username }}</span>
+                  <span class="text-gold">{{ currentPlayer.username }}</span>
                   <span class="text-sm text-gray-400">{{
                     currentPlayer.rank
                   }}</span>
@@ -448,7 +453,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
               this.initAvailablePlayers();
             }
           }
-
         })
       );
     } else {

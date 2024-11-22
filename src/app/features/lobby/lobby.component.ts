@@ -11,7 +11,7 @@ import { AvailablePlayersModalComponent } from './components/available-players.c
 import { InviteButtonComponent } from './components/invite-button.component';
 import { ChallengeModalComponent } from '../../components/challenge-modal.component';
 import { QueueComponent } from '../../components/queue.component';
-import { VoteModalComponent } from '../../components/vote-modal.component';
+import { VoteModalComponent } from './components/vote-modal/vote-modal.component';
 import { TeamChallengeComponent } from '../../components/team-challenge.component';
 import { MatchStatusComponent } from '../../components/match-status.component';
 import { LoadingStateComponent } from '../../shared/components/loading-state.component';
@@ -86,6 +86,7 @@ import { MatchesService } from '../../services/matches.service';
       >
       </app-team-challenge>
 
+      <!-- Vote Modal -->
       <app-vote-modal
         *ngIf="showVoting"
         [opposingTeam]="lastOpposingTeam!"
@@ -93,6 +94,9 @@ import { MatchesService } from '../../services/matches.service';
         [canVote]="canVote"
         [submittedVotes]="currentVotes"
         [isComplete]="isVotingComplete"
+        [winnerTeamId]="match?.winner?.id"
+        [mostVotedPlayer]="match?.mostVotedPlayer"
+        [currentPlayer]="currentPlayer"
         (onVoteSubmit)="handleVoteSubmit($event)"
         (onVotingComplete)="handleVotingComplete()"
       >
@@ -121,6 +125,7 @@ import { MatchesService } from '../../services/matches.service';
                   <app-player-card
                     *ngFor="let player of currentTeam.players"
                     [player]="player"
+                    [currentPlayer]="currentPlayer"
                     [isCaptain]="player.id === currentTeam.captain.id"
                   >
                   </app-player-card>
@@ -391,9 +396,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
       this.currentTeam = { ...team };
 
       if (team.status === 'eliminated') {
+        this.initSoloState();
         this.currentTeam = null;
         this.availableTeams = [];
-        this.initTeamState();
         return;
       }
 
@@ -490,7 +495,6 @@ export class LobbyComponent implements OnInit, OnDestroy {
       // Actualizar votos solo si son diferentes
       if (JSON.stringify(this.currentVotes) !== JSON.stringify(match.votes)) {
         this.currentVotes = [...match.votes];
-
         // Actualizar mi voto si existe
         this.myVote = this.currentVotes.find(
           (vote) => vote.fromPlayer.id === this.currentPlayer.id
@@ -519,6 +523,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.currentTeam = teams.find((team) =>
       team.players.some((player) => player.id === this.currentPlayer.id)
     );
+
+    // agregar jugador mas votado a match
+    this.match = match;
 
     // Si el modal de votación está abierto, marcar como completo
     if (this.showVoting) {
@@ -673,15 +680,13 @@ export class LobbyComponent implements OnInit, OnDestroy {
     this.myVote = undefined;
 
     // Limpiar suscripciones y actualizar estado
+    this.unsubscribe('availableTeams');
     this.unsubscribe('matchStatus');
     this.cleanupAfterMatch();
   }
 
   private async cleanupAfterMatch() {
-    if (
-      this.currentTeam?.status === 'eliminated' ||
-      this.currentTeam?.status === 'in-match'
-    ) {
+    if (this.currentTeam?.status === 'eliminated' || !this.currentTeam) {
       this.currentTeam = null;
       await this.initSoloState();
     } else {

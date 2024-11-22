@@ -9,6 +9,7 @@ import {
   UpdateMatchGQL,
 } from '../generated/graphql';
 import { filter, map, Observable, tap } from 'rxjs';
+import { Match, MatchOutcome, Player, Team } from '../models/types';
 
 @Injectable({
   providedIn: 'root',
@@ -77,5 +78,55 @@ export class MatchesService {
         return match;
       })
     );
+  }
+
+  getMostVotedPlayer(match: Match, team: Team): Player | null {
+    if (!match.votes?.length) return null;
+
+    const voteCounts = new Map<string, number>();
+    let maxVotes = 0;
+    let mostVotedPlayerId = '';
+
+    match.votes.forEach((vote) => {
+      const playerId = vote.forPlayer.id;
+      const currentCount = (voteCounts.get(playerId) || 0) + 1;
+      voteCounts.set(playerId, currentCount);
+
+      if (currentCount > maxVotes) {
+        maxVotes = currentCount;
+        mostVotedPlayerId = playerId;
+      }
+    });
+
+    return team.players.find((p) => p.id === mostVotedPlayerId) || null;
+  }
+
+  getMatchOutcome(match: Match, currentTeamId: string): MatchOutcome {
+    const winningTeam =
+      match.winner?.id === match.team1.id ? match.team1 : match.team2;
+    const losingTeam =
+      match.winner?.id === match.team1.id ? match.team2 : match.team1;
+    const currentTeam =
+      currentTeamId === match.team1.id ? match.team1 : match.team2;
+    const isTeamEliminated = losingTeam.players.length <= 2;
+    const mostVotedPlayer = match.mostVotedPlayer;
+
+    return {
+      winningTeam,
+      losingTeam,
+      isTeamEliminated,
+      mostVotedPlayer: mostVotedPlayer!,
+      currentTeam,
+    };
+  }
+
+  getVoteCount(match: Match, playerId: string): number {
+    return match.votes?.filter((v) => v.forPlayer.id === playerId).length || 0;
+  }
+
+  isVotingComplete(match: Match, team: Team): boolean {
+    const expectedVotes = team.players.length;
+    const actualVotes = match.votes?.length || 0;
+    return actualVotes >= expectedVotes;
   }
 }

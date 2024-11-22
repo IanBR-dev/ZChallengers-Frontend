@@ -18,24 +18,25 @@ import { Team } from '../../models/types';
           <div class="grid grid-cols-2 gap-8">
             <!-- Team 1 -->
             <div
+              *ngIf="team1"
               class="gold-border rounded-lg p-4 bg-black/50 cursor-pointer transition-all duration-300 hover:bg-black/70"
-              [class.ring-2]="selectedWinner?.id === team1Snapshot.id"
-              [class.ring-gold]="selectedWinner?.id === team1Snapshot.id"
-              (click)="selectWinner(team1Snapshot)"
+              [class.ring-2]="selectedWinner?.id === team1.id"
+              [class.ring-gold]="selectedWinner?.id === team1.id"
+              (click)="selectWinner(team1)"
             >
               <div class="flex justify-between items-start mb-4">
-                <h3 class="text-xl gold-gradient">{{ team1Snapshot.name }}</h3>
+                <h3 class="text-xl gold-gradient">{{ team1.name }}</h3>
               </div>
               <div class="space-y-2">
                 <div
-                  *ngFor="let player of team1Snapshot.players"
+                  *ngFor="let player of team1.players"
                   class="flex items-center gap-2"
                 >
                   <img [src]="player.avatar" class="w-6 h-6 rounded-full" />
                   <span class="text-white">{{ player.username }}</span>
                   <span class="text-sm text-gray-400">{{ player.rank }}</span>
                   <span
-                    *ngIf="player.id === team1Snapshot.captain.id"
+                    *ngIf="player.id === team1.captain.id"
                     class="text-gold text-sm"
                     >(Captain)</span
                   >
@@ -45,24 +46,25 @@ import { Team } from '../../models/types';
 
             <!-- Team 2 -->
             <div
+              *ngIf="team2"
               class="gold-border rounded-lg p-4 bg-black/50 cursor-pointer transition-all duration-300 hover:bg-black/70"
-              [class.ring-2]="selectedWinner?.id === team2Snapshot.id"
-              [class.ring-gold]="selectedWinner?.id === team2Snapshot.id"
-              (click)="selectWinner(team2Snapshot)"
+              [class.ring-2]="selectedWinner?.id === team2.id"
+              [class.ring-gold]="selectedWinner?.id === team2.id"
+              (click)="selectWinner(team2)"
             >
               <div class="flex justify-between items-start mb-4">
-                <h3 class="text-xl gold-gradient">{{ team2Snapshot.name }}</h3>
+                <h3 class="text-xl gold-gradient">{{ team2.name }}</h3>
               </div>
               <div class="space-y-2">
                 <div
-                  *ngFor="let player of team2Snapshot.players"
+                  *ngFor="let player of team2.players"
                   class="flex items-center gap-2"
                 >
                   <img [src]="player.avatar" class="w-6 h-6 rounded-full" />
                   <span class="text-white">{{ player.username }}</span>
                   <span class="text-sm text-gray-400">{{ player.rank }}</span>
                   <span
-                    *ngIf="player.id === team2Snapshot.captain.id"
+                    *ngIf="player.id === team2.captain.id"
                     class="text-gold text-sm"
                     >(Captain)</span
                   >
@@ -95,8 +97,8 @@ import { Team } from '../../models/types';
 })
 export class AdminMatchStatusComponent {
   @Input() matchId!: string;
-  @Input() team1Snapshot!: Team;
-  @Input() team2Snapshot!: Team;
+  @Input() team1!: Team | undefined;
+  @Input() team2!: Team | undefined;
   @Output() declareWinner = new EventEmitter<{
     matchId: string;
     winnerId: string;

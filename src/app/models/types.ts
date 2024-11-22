@@ -12,7 +12,7 @@ export interface Player {
   id: string;
   username: string;
   rank?: string;
-  avatar?: string;
+  avatar?: string | null;
   team?: Team | null; // Referencia al equipo actual del jugador
 }
 export interface Team {
@@ -67,12 +67,21 @@ export interface Match {
   team1: Team; // Equipo 1
   team2: Team; // Equipo 2
   votes?: Voted[] | null; // Votos emitidos
-  winner?: { id: string } | null; // Equipo ganador
+  winner?: { id: string; players?: Pick<Player, 'id'>[] } | null; // Equipo ganador
   team1Snapshot?: Team; // Equipo 1
   team2Snapshot?: Team; // Equipo 2
+  mostVotedPlayer?: Player | null;
 }
 
 interface Voted {
   forPlayer: Pick<Player, 'id'>;
   fromPlayer: Pick<Player, 'id'>;
+}
+
+export interface MatchOutcome {
+  winningTeam: Team;
+  losingTeam: Team;
+  isTeamEliminated: boolean;
+  mostVotedPlayer: Player | null;
+  currentTeam: Team;
 }

@@ -86,13 +86,13 @@ export class MatchFoundComponent {
   }
 
   private showNotification() {
-    if ('Notification' in window && Notification.permission === 'granted') {
+   /*  if ('Notification' in window && Notification.permission === 'granted') {
       new Notification('Team Challenge!', {
         body: `${this.challengingTeam.name} has challenged your team!`,
         icon: '/favicon.ico',
         requireInteraction: true,
       });
-    }
+    } */
   }
 
   private startCountdown() {

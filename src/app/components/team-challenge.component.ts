@@ -249,7 +249,7 @@ export class TeamChallengeComponent implements OnInit {
   }
 
   private showNotification() {
-    if ('Notification' in window && Notification.permission === 'granted') {
+ /*    if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(
         this.isChallenger ? 'Battle Initiated!' : 'Prepare for Battle!',
         {
@@ -260,6 +260,6 @@ export class TeamChallengeComponent implements OnInit {
           requireInteraction: true,
         }
       );
-    }
+    } */
   }
 }

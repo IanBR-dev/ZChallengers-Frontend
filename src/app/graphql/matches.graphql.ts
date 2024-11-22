@@ -86,6 +86,9 @@ export const MATCH_STATUS = gql`
       }
       winner {
         id
+        players {
+          id
+        }
       }
       votes {
         fromPlayer {
@@ -94,6 +97,91 @@ export const MATCH_STATUS = gql`
         forPlayer {
           id
         }
+      }
+      mostVotedPlayer {
+        id
+        username
+        avatar
+      }
+    }
+  }
+`;
+
+export const ALL_MATCH_STATUS = gql`
+  subscription getAllMatchStatus {
+    getAllMatchStatus {
+      id
+      status
+      team1 {
+        id
+        name
+        players {
+          id
+          username
+          rank
+          avatar
+        }
+        captain {
+          id
+        }
+        status
+      }
+      team2 {
+        id
+        name
+        players {
+          id
+          username
+          rank
+          avatar
+        }
+        captain {
+          id
+        }
+        status
+      }
+      team1Snapshot {
+        id
+        name
+        players {
+          id
+          username
+          avatar
+        }
+        captain {
+          id
+        }
+      }
+      team2Snapshot {
+        id
+        name
+        players {
+          id
+          username
+          avatar
+        }
+        captain {
+          id
+        }
+      }
+      winner {
+        id
+        players {
+          id
+        }
+      }
+      votes {
+        fromPlayer {
+          id
+        }
+        forPlayer {
+          id
+        }
+      }
+      mostVotedPlayer {
+        id
+        username
+        avatar
       }
     }
   }
