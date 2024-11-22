@@ -6,9 +6,9 @@ import {
   OnDestroy,
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { LoadingSpinnerComponent } from '../shared/components/loading-spinner.component';
-import { Team } from '../models/types';
-import { QueueService } from '../services/queue.service';
+import { LoadingSpinnerComponent } from '../../../shared/components/loading-spinner.component';
+import { Team } from '../../../models/types';
+import { QueueService } from '../../../services/queue.service';
 import { Subscription } from 'rxjs';
 
 @Component({

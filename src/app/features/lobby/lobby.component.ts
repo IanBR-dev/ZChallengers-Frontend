@@ -10,12 +10,14 @@ import { TeamListComponent } from './components/team-list.component';
 import { AvailablePlayersModalComponent } from './components/available-players.component';
 import { InviteButtonComponent } from './components/invite-button.component';
 import { ChallengeModalComponent } from './components/challenge-modal.component';
-import { QueueComponent } from '../../components/queue.component';
+import { QueueComponent } from './components/queue.component';
 import { VoteModalComponent } from './components/vote-modal/vote-modal.component';
-import { TeamChallengeComponent } from '../../components/team-challenge.component';
-import { MatchStatusComponent } from '../../components/match-status.component';
-import { LoadingStateComponent } from '../../shared/components/loading-state.component';
+import { TeamChallengeComponent } from './components/team-challenge.component';
+import { MatchStatusComponent } from './components/match-status.component';
 import { TeamFoundAnimationComponent } from './components/team-found-animation.component';
+
+// Componets Shared
+import { LoadingStateComponent } from '../../shared/components/loading-state.component';
 
 // Types
 import { Invitation, Match, Player, Team, Vote } from '../../models/types';

@@ -1,6 +1,6 @@
 import { Component, Input, Output, EventEmitter, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Team } from '../models/types';
+import { Team } from '../../../models/types';
 
 @Component({
   selector: 'app-team-challenge',
