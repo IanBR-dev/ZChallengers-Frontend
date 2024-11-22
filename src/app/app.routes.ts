@@ -1,6 +1,6 @@
 import { Routes } from '@angular/router';
 import { AuthGuard } from './guards/auth.guard';
-import { AdminMatchListComponent } from './components/admin/admin-match-list.component';
+import { AdminMatchListComponent } from './features/admin/admin-match-list.component';
 import { LobbyComponent } from './features/lobby/lobby.component';
 import { LoginComponent } from './features/auth/login/login.component';
 

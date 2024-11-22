@@ -2,10 +2,10 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
-import { ConfirmWinnerModalComponent } from './confirm-winner-modal.component';
 import { AdminMatchStatusComponent } from './admin-match-status.component';
 import { Match, Team } from '../../models/types';
 import { MatchesService } from './services/matches.service';
+import { ConfirmWinnerModalComponent } from './confirm-winner-modal.component';
 @Component({
   selector: 'app-admin-match-list',
   standalone: true,

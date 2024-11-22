@@ -21,7 +21,7 @@ import { LoadingStateComponent } from '../../shared/components/loading-state.com
 
 // Types
 import { Invitation, Match, Player, Team, Vote } from '../../models/types';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../auth/services/auth.service';
 import { GameService } from '../../services/game.service';
 import { TeamsService } from '../../services/teams.service';
 import { InvitationsService } from '../../services/invitations.service';

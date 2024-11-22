@@ -2,8 +2,8 @@ import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { filter, map, take, tap } from 'rxjs/operators';
 import { Apollo } from 'apollo-angular';
-import { LOGIN, REGISTER } from '../graphql/auth.graphql';
-import { GET_ME } from '../graphql/users.graphql';
+import { LOGIN, REGISTER } from '../../../graphql/auth.graphql';
+import { GET_ME } from '../../../graphql/users.graphql';
 import {
   LoginMutation,
   RegisterMutation,
@@ -12,7 +12,7 @@ import {
   RegisterInput,
   DisconnectGQL,
   MeGQL,
-} from '../generated/graphql';
+} from '../../../generated/graphql';
 import { Router } from '@angular/router';
 
 @Injectable({
