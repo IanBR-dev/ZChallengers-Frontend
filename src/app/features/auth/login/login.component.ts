@@ -150,9 +150,9 @@ import { AuthService } from '../services/auth.service';
                text-white rounded-full p-3 transition-all duration-200 z-20"
         title="{{ showVideo ? 'Desactivar video' : 'Activar video' }}"
       >
-        <i
-          class="fas {{ showVideo ? 'fa-video-slash' : 'fa-video' }} text-xl"
-        ></i>
+        <span class="material-symbols-outlined text-xl">
+          {{ showVideo ? 'video_off' : 'video' }}
+        </span>
       </button>
     </div>
   `,

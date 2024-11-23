@@ -103,11 +103,11 @@ export class MatchesService {
 
   getMatchOutcome(match: Match, currentTeamId: string): MatchOutcome {
     const winningTeam =
-      match.winner?.id === match.team1.id ? match.team1 : match.team2;
+      match.winner?.id === match.team1?.id ? match.team1 : match.team2;
     const losingTeam =
-      match.winner?.id === match.team1.id ? match.team2 : match.team1;
+      match.winner?.id === match.team1?.id ? match.team2 : match.team1;
     const currentTeam =
-      currentTeamId === match.team1.id ? match.team1 : match.team2;
+      currentTeamId === match.team1?.id ? match.team1 : match.team2;
     const isTeamEliminated = losingTeam.players.length <= 2;
     const mostVotedPlayer = match.mostVotedPlayer;
 

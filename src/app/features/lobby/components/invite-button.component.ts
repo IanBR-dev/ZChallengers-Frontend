@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -6,22 +6,27 @@ import { CommonModule } from '@angular/common';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <button
-      (click)="onClick.emit()"
-      class="gold-button flex items-center gap-2 px-4 py-2 hover:scale-105 active:scale-95 
-                   transition-transform"
-    >
+    <button (click)="onClick.emit()" class="invite-button">
       <span class="material-symbols-outlined">group_add</span>
       <span>Invite Players</span>
     </button>
   `,
   styles: [
     `
-      .gold-button {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        color: black;
-        font-weight: 500;
-        border-radius: 0.5rem;
+      .invite-button {
+        @apply flex items-center gap-2 px-6 py-3 rounded-lg font-medium 
+             transition-all duration-200 relative overflow-hidden;
+        background: var(--primary);
+        color: var(--text-primary);
+      }
+
+      .invite-button:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+      }
+
+      .invite-button:active {
+        transform: translateY(0);
       }
     `,
   ],

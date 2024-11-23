@@ -8,24 +8,45 @@ import { PlayerCardComponent } from './player-card.component';
   standalone: true,
   imports: [CommonModule, PlayerCardComponent],
   template: `
-    <div
-      class="gold-border rounded-lg p-4 bg-black/50 hover:bg-black/60 transition-colors"
-    >
+    <div class="team-card group">
+      <!-- Header -->
       <div class="flex justify-between items-start mb-4">
-        <h3 class="text-lg gold-gradient">{{ team.name }}</h3>
+        <div class="space-y-1">
+          <h3 class="text-lg font-bold" style="color: var(--primary)">
+            {{ team.name }}
+          </h3>
+          <div class="flex items-center gap-2">
+            <span class="team-stat">
+              <span class="material-symbols-outlined text-xs mr-1">
+                {{ team.players.length === 1 ? 'person' : 'people' }}
+              </span>
+              {{ team.players.length }}/5
+            </span>
+            <!--             <span class="team-stat">
+              <i class="fas fa-trophy text-xs mr-1"></i>
+              {{ team.stats?.winRate || '0' }}% WR
+            </span> -->
+          </div>
+        </div>
+
+        <!-- Challenge Button -->
         <button
           *ngIf="showChallengeButton"
-          class="gold-button text-sm px-3 py-1"
+          class="challenge-button"
           (click)="onChallenge.emit(team)"
         >
+          <span class="material-symbols-outlined">swords</span>
           Challenge
         </button>
       </div>
+
+      <!-- Players List -->
       <div class="space-y-2">
         <app-player-card
           *ngFor="let player of team.players"
           [player]="player"
           [isCaptain]="player.id === team.captain.id"
+          class="animate-slide-up"
         >
         </app-player-card>
       </div>
@@ -33,48 +54,52 @@ import { PlayerCardComponent } from './player-card.component';
   `,
   styles: [
     `
-      .gold-gradient {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      .team-card {
+        @apply relative p-6 rounded-lg transition-all duration-200;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-light);
       }
 
-      :host {
-        display: block;
+      .team-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-2px);
       }
 
-      .gold-border {
-        position: relative;
-        overflow: hidden;
+      .team-stat {
+        @apply text-xs px-2 py-0.5 rounded-full;
+        background: var(--primary-light);
+        color: var(--primary);
       }
 
-      .gold-border::before {
-        content: '';
-        position: absolute;
-        inset: 0;
-        border: 1px solid transparent;
-        background: linear-gradient(to right, #ffd700, #b8860b) border-box;
-        -webkit-mask: linear-gradient(#fff 0 0) padding-box,
-          linear-gradient(#fff 0 0);
-        -webkit-mask-composite: destination-out;
-        mask-composite: exclude;
+      .challenge-button {
+        @apply px-4 py-1.5 rounded text-sm font-medium 
+             transition-all duration-200 relative overflow-hidden;
+        background: var(--primary);
+        color: var(--text-primary);
       }
 
-      .gold-button {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        color: black;
-        font-weight: 500;
-        border-radius: 0.5rem;
-        transition: all 200ms;
-      }
-
-      .gold-button:hover {
-        transform: scale(1.02);
+      .challenge-button:hover {
         filter: brightness(1.1);
+        transform: translateY(-1px);
       }
 
-      .gold-button:active {
-        transform: scale(0.98);
+      .challenge-button:active {
+        transform: translateY(0);
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-slide-up {
+        animation: slideUp 0.3s ease-out forwards;
       }
     `,
   ],

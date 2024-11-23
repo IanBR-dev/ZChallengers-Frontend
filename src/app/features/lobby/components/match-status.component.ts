@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Team } from '../../../models/types';
 
@@ -9,60 +9,110 @@ import { Team } from '../../../models/types';
   template: `
     <div class="pt-24 px-4 pb-4">
       <div class="max-w-5xl mx-auto">
-        <div class="gold-border rounded-lg p-6 bg-black/50 mb-8">
-          <div class="flex justify-between items-center mb-6">
-            <h2 class="text-2xl gold-gradient">MATCH IN PROGRESS</h2>
-            <div class="text-2xl text-gold font-bold">{{ matchTime }}</div>
+        <div class="glass rounded-lg p-8">
+          <!-- Header -->
+          <div class="flex justify-between items-center mb-8">
+            <h2 class="text-2xl font-bold" style="color: var(--primary)">
+              MATCH IN PROGRESS
+            </h2>
+            <div class="match-timer">{{ matchTime }}</div>
           </div>
 
-          <div class="grid grid-cols-2 gap-8">
+          <!-- Teams Container -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
             <!-- Team 1 -->
-            <div class="gold-border rounded-lg p-4 bg-black/50">
-              <div class="flex justify-between items-start mb-4">
-                <h3 class="text-xl gold-gradient">{{ team1.name }}</h3>
+            <div class="team-panel">
+              <div class="team-header">
+                <h3 class="text-xl font-bold" style="color: var(--primary)">
+                  {{ team1.name }}
+                </h3>
+                <div class="team-stats">
+                  <!--   <span class="stat">
+                    <i class="fas fa-trophy"></i>
+                    {{ team1.stats?.winRate || '0' }}% WR
+                  </span> -->
+                  <!--   <span class="stat">
+                    <i class="fas fa-bolt"></i>
+                    {{ team1.stats?.avgScore || '0' }} Score
+                  </span> -->
+                </div>
               </div>
-              <div class="space-y-2">
+
+              <div class="players-grid">
                 <div
                   *ngFor="let player of team1.players"
-                  class="flex items-center gap-2"
+                  class="player-card"
+                  [class.captain]="player.id === team1.captain.id"
                 >
-                  <img [src]="player.avatar" class="w-6 h-6 rounded-full" />
-                  <span class="text-white">{{ player.username }}</span>
-                  <span class="text-sm text-gray-400">{{ player.rank }}</span>
-                  <span
-                    *ngIf="player.id === team1.captain.id"
-                    class="text-gold text-sm"
-                    >(Captain)</span
-                  >
+                  <div class="player-avatar">
+                    <img [src]="player.avatar" [alt]="player.username" />
+                    <div
+                      *ngIf="player.id === team1.captain?.id"
+                      class="captain-badge"
+                    >
+                      <span class="material-symbols-outlined text-xs">
+                        military_tech
+                      </span>
+                    </div>
+                  </div>
+                  <div class="player-info">
+                    <span class="player-name">{{ player.username }}</span>
+                    <span class="player-rank">{{ player.rank }}</span>
+                  </div>
                 </div>
               </div>
             </div>
 
             <!-- Team 2 -->
-            <div class="gold-border rounded-lg p-4 bg-black/50">
-              <div class="flex justify-between items-start mb-4">
-                <h3 class="text-xl gold-gradient">{{ team2.name }}</h3>
+            <div class="team-panel">
+              <div class="team-header">
+                <h3 class="text-xl font-bold" style="color: var(--primary)">
+                  {{ team2.name }}
+                </h3>
+                <div class="team-stats">
+                  <!--   <span class="stat">
+                    <i class="fas fa-trophy"></i>
+                    {{ team2.stats?.winRate || '0' }}% WR
+                  </span> -->
+                  <!--      <span class="stat">
+                    <i class="fas fa-bolt"></i>
+                    {{ team2.stats?.avgScore || '0' }} Score
+                  </span> -->
+                </div>
               </div>
-              <div class="space-y-2">
+
+              <div class="players-grid">
                 <div
                   *ngFor="let player of team2.players"
-                  class="flex items-center gap-2"
+                  class="player-card"
+                  [class.captain]="player.id === team2.captain.id"
                 >
-                  <img [src]="player.avatar" class="w-6 h-6 rounded-full" />
-                  <span class="text-white">{{ player.username }}</span>
-                  <span class="text-sm text-gray-400">{{ player.rank }}</span>
-                  <span
-                    *ngIf="player.id === team2.captain.id"
-                    class="text-gold text-sm"
-                    >(Captain)</span
-                  >
+                  <div class="player-avatar">
+                    <img [src]="player.avatar" [alt]="player.username" />
+                    <div
+                      *ngIf="player.id === team2.captain?.id"
+                      class="captain-badge"
+                    >
+                      <span class="material-symbols-outlined text-xs">
+                        military_tech
+                      </span>
+                    </div>
+                  </div>
+                  <div class="player-info">
+                    <span class="player-name">{{ player.username }}</span>
+                    <span class="player-rank">{{ player.rank }}</span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="text-center text-gray-400 animate-pulse mt-6">
-            Match in progress...
+          <!-- Match Status -->
+          <div class="match-status">
+            <div class="status-indicator">
+              <span class="material-symbols-outlined">sync</span>
+              <span>Match in progress...</span>
+            </div>
           </div>
         </div>
       </div>
@@ -70,23 +120,90 @@ import { Team } from '../../../models/types';
   `,
   styles: [
     `
-      .gold-gradient {
-        background: linear-gradient(to right, #ffd700, #ffa500);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-      }
-
-      .gold-border {
-        border: 1px solid rgba(255, 215, 0, 0.3);
-      }
-
       :host {
         display: block;
         width: 100%;
       }
 
-      .animate-pulse {
-        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      .match-timer {
+        @apply text-2xl font-bold px-4 py-2 rounded-lg;
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+
+      .team-panel {
+        @apply p-6 rounded-lg space-y-6;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-light);
+      }
+
+      .team-header {
+        @apply space-y-3;
+      }
+
+      .team-stats {
+        @apply flex gap-4;
+      }
+
+      .stat {
+        @apply text-sm px-3 py-1 rounded-full flex items-center gap-2;
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+
+      .players-grid {
+        @apply space-y-3;
+      }
+
+      .player-card {
+        @apply p-4 rounded-lg flex items-center gap-3 transition-all duration-200;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-light);
+      }
+
+      .player-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-1px);
+      }
+
+      .player-avatar {
+        @apply relative;
+      }
+
+      .player-avatar img {
+        @apply w-10 h-10 rounded-lg object-cover;
+      }
+
+      .captain-badge {
+        @apply absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center;
+        background: var(--primary);
+        color: var(--bg-dark);
+        font-size: 10px;
+      }
+
+      .player-info {
+        @apply flex-1;
+      }
+
+      .player-name {
+        @apply font-medium;
+        color: var(--text-primary);
+      }
+
+      .player-rank {
+        @apply text-sm block;
+        color: var(--text-secondary);
+      }
+
+      .match-status {
+        @apply mt-8 flex justify-center;
+      }
+
+      .status-indicator {
+        @apply flex items-center gap-3 px-6 py-3 rounded-lg text-lg;
+        background: var(--primary-light);
+        color: var(--primary);
+        animation: pulse 2s infinite;
       }
 
       @keyframes pulse {
@@ -95,7 +212,7 @@ import { Team } from '../../../models/types';
           opacity: 1;
         }
         50% {
-          opacity: 0.5;
+          opacity: 0.7;
         }
       }
     `,
@@ -104,37 +221,21 @@ import { Team } from '../../../models/types';
 export class MatchStatusComponent {
   @Input() team1!: Team;
   @Input() team2!: Team;
-  @Output() matchComplete = new EventEmitter<Team>();
-
   matchTime = '00:00';
-  private matchInterval: any;
-  private matchStartTime: number = 0;
 
   ngOnInit() {
-    this.startMatch();
+    this.startTimer();
   }
 
-  ngOnDestroy() {
-    this.clearInterval();
-  }
-
-  private startMatch() {
-    this.matchStartTime = Date.now();
-    this.matchInterval = setInterval(() => this.updateMatchTime(), 1000);
-  }
-
-  private updateMatchTime() {
-    const elapsed = Math.floor((Date.now() - this.matchStartTime) / 1000);
-    const minutes = Math.floor(elapsed / 60);
-    const seconds = elapsed % 60;
-    this.matchTime = `${minutes.toString().padStart(2, '0')}:${seconds
-      .toString()
-      .padStart(2, '0')}`;
-  }
-
-  private clearInterval() {
-    if (this.matchInterval) {
-      clearInterval(this.matchInterval);
-    }
+  private startTimer() {
+    let seconds = 0;
+    setInterval(() => {
+      seconds++;
+      const minutes = Math.floor(seconds / 60);
+      const remainingSeconds = seconds % 60;
+      this.matchTime = `${minutes
+        .toString()
+        .padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }, 1000);
   }
 }

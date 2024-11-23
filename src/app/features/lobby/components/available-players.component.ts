@@ -8,91 +8,104 @@ import { Player, Invitation } from '../../../models/types';
   standalone: true,
   imports: [CommonModule, FormsModule],
   template: `
-    <div
-      class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-    >
+    <div class="fixed inset-0 z-[60] flex items-center justify-center p-4">
+      <!-- Backdrop -->
       <div
-        class="bg-black/90 border border-gold/30 rounded-lg w-full max-w-2xl transform transition-all"
-      >
-        <!-- Header -->
-        <div
-          class="border-b border-gold/20 p-4 flex justify-between items-center"
-        >
-          <h2 class="text-xl gold-gradient font-bold flex items-center gap-2">
-            <span class="material-symbols-outlined">group_add</span>
-            Available Players
-          </h2>
-          <button
-            class="text-gray-400 hover:text-white transition-colors"
-            (click)="onClose.emit()"
-          >
-            <span class="material-symbols-outlined">close</span>
-          </button>
-        </div>
+        class="absolute inset-0"
+        style="background: var(--bg-overlay)"
+        (click)="onClose.emit()"
+      ></div>
 
-        <!-- Search -->
-        <div class="p-4 border-b border-gold/20">
+      <!-- Modal -->
+      <div class="glass w-full max-w-4xl relative animate-slide-up">
+        <!-- Header -->
+        <div class="p-6 flex flex-col">
+          <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold" style="color: var(--primary)">
+              <span class="material-symbols-outlined">group_add</span>
+              Available Players
+            </h2>
+            <button class="modal-close-button" (click)="onClose.emit()">
+              <span class="material-symbols-outlined">close</span>
+            </button>
+          </div>
+
+          <!-- Search -->
           <div class="relative">
             <input
               type="text"
               [(ngModel)]="searchQuery"
               placeholder="Search players by name or rank..."
-              class="w-full bg-black/50 border border-gold/30 rounded-lg px-4 py-2 text-white 
-                          placeholder-gray-400 focus:border-gold focus:outline-none pr-10"
+              class="search-input"
             />
             <span
-              class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+              class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2"
+              style="color: var(--text-muted)"
             >
-              search
+              {{ searchQuery ? 'close' : 'search' }}
             </span>
           </div>
         </div>
 
-        <!-- Players List -->
-        <div class="p-4 max-h-[60vh] overflow-y-auto custom-scrollbar">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <!-- Players Grid -->
+        <div class="p-6 max-h-[60vh] overflow-y-auto custom-scrollbar">
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             <div
               *ngFor="let player of filteredPlayers"
-              class="bg-black/40 border border-gold/10 rounded-lg p-3 hover:border-gold/30 
-                        transition-colors animate-fadeIn"
+              class="player-card group"
             >
-              <div class="flex items-center justify-between gap-3">
-                <div class="flex items-center gap-3 flex-1">
-                  <div class="relative">
-                    <img
-                      [src]="player.avatar"
-                      [alt]="player.username"
-                      class="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div
-                      class="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full 
-                                border-2 border-black"
-                    ></div>
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <h3 class="font-medium truncate">{{ player.username }}</h3>
-                    <p class="text-sm text-gray-400">{{ player.rank }}</p>
+              <!-- Player Info -->
+              <div class="flex items-center gap-4">
+                <!-- Avatar with Status -->
+                <div class="relative">
+                  <img
+                    [src]="player.avatar"
+                    [alt]="player.username"
+                    class="w-12 h-12 rounded-lg object-cover transition-transform duration-200 group-hover:scale-105"
+                  />
+                  <!--                 <div
+                    class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full border-2"
+                    [style.background]="
+                      player.status === 'online'
+                        ? 'var(--success)'
+                        : player.status === 'in-game'
+                        ? 'var(--warning)'
+                        : 'var(--error)'
+                    "
+                    [style.border-color]="'var(--bg-dark)'"
+                  ></div> -->
+                </div>
+
+                <!-- Player Details -->
+                <div class="flex-1 min-w-0">
+                  <h3
+                    class="font-medium truncate"
+                    style="color: var(--text-primary)"
+                  >
+                    {{ player.username }}
+                  </h3>
+                  <div class="flex items-center gap-2 mt-1">
+                    <span class="rank-badge">
+                      {{ player.rank }}
+                    </span>
+                    <!--    <span class="stats-text">
+                      Win Rate: {{ player.stats?.winRate || '0' }}%
+                    </span> -->
                   </div>
                 </div>
 
-                <!-- Invite Button with States -->
+                <!-- Invite Button States -->
                 <ng-container *ngIf="getInviteState(player.id) as state">
                   <button
                     *ngIf="state.type === 'invite'"
-                    class="gold-button text-sm px-3 py-1 transition-all hover:scale-105 active:scale-95"
+                    class="invite-button"
                     (click)="handleInvite(player.id)"
                   >
                     Invite
                   </button>
 
-                  <div
-                    *ngIf="state.type === 'pending'"
-                    class="text-sm text-gray-400 flex items-center gap-1"
-                  >
-                    <span
-                      class="material-symbols-outlined text-base animate-spin"
-                      >sync</span
-                    >
+                  <div *ngIf="state.type === 'pending'" class="pending-state">
+                    <span class="material-symbols-outlined">sync</span>
                     <span>{{ state.timeLeft }}s</span>
                   </div>
                 </ng-container>
@@ -101,15 +114,19 @@ import { Player, Invitation } from '../../../models/types';
           </div>
 
           <!-- Empty State -->
-          <div
-            *ngIf="filteredPlayers.length === 0"
-            class="text-center py-8 text-gray-400"
-          >
-            <span class="material-symbols-outlined text-4xl mb-2"
-              >person_search</span
+          <div *ngIf="filteredPlayers.length === 0" class="empty-state">
+            <span
+              class="material-symbols-outlined text-lg"
+              style="color: var(--text-muted)"
             >
-            <p class="mb-1">No players found</p>
-            <p class="text-sm">Try adjusting your search criteria</p>
+              person_search
+            </span>
+            <p class="text-lg" style="color: var(--text-primary)">
+              No players found
+            </p>
+            <p class="text-sm" style="color: var(--text-secondary)">
+              Try adjusting your search criteria
+            </p>
           </div>
         </div>
       </div>
@@ -117,50 +134,91 @@ import { Player, Invitation } from '../../../models/types';
   `,
   styles: [
     `
-      .gold-gradient {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      .modal-close-button {
+        @apply w-10 h-10 rounded-lg flex items-center justify-center transition-all duration-200;
+        background: var(--bg-dark);
+        color: var(--text-secondary);
+        border: 1px solid var(--border-light);
       }
 
-      .gold-button {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        color: black;
-        font-weight: 500;
-        border-radius: 0.375rem;
+      .modal-close-button:hover {
+        color: var(--primary);
+        border-color: var(--primary);
+        transform: rotate(90deg);
       }
 
-      .custom-scrollbar {
-        scrollbar-width: thin;
-        scrollbar-color: rgba(255, 215, 0, 0.3) transparent;
+      .search-input {
+        @apply w-full px-4 py-3 rounded-lg pr-10;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-light);
+        color: var(--text-primary);
+        transition: all 0.2s ease;
       }
 
-      .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
+      .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
       }
 
-      .custom-scrollbar::-webkit-scrollbar-track {
-        background: transparent;
+      .search-input::placeholder {
+        color: var(--text-muted);
       }
 
-      .custom-scrollbar::-webkit-scrollbar-thumb {
-        background-color: rgba(255, 215, 0, 0.3);
-        border-radius: 3px;
+      .player-card {
+        @apply p-4 rounded-lg transition-all duration-200;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-light);
       }
 
-      @keyframes fadeIn {
+      .player-card:hover {
+        border-color: var(--primary);
+        transform: translateY(-1px);
+      }
+
+      .rank-badge {
+        @apply text-xs px-2 py-0.5 rounded-full;
+        background: var(--primary-light);
+        color: var(--primary);
+      }
+
+      .stats-text {
+        @apply text-xs;
+        color: var(--text-muted);
+      }
+
+      .invite-button {
+        @apply px-4 py-1.5 rounded text-sm font-medium transition-all duration-200;
+        background: var(--primary);
+        color: var(--text-primary);
+      }
+
+      .invite-button:hover {
+        filter: brightness(1.1);
+        transform: translateY(-1px);
+      }
+
+      .pending-state {
+        @apply flex items-center gap-2 text-sm;
+        color: var(--text-muted);
+      }
+
+      .empty-state {
+        @apply text-center py-12;
+      }
+
+      .animate-slide-up {
+        animation: slideUp 0.3s ease-out;
+      }
+
+      @keyframes slideUp {
         from {
           opacity: 0;
-          transform: translateY(10px);
+          transform: translateY(20px);
         }
         to {
           opacity: 1;
           transform: translateY(0);
         }
-      }
-
-      .animate-fadeIn {
-        animation: fadeIn 0.2s ease-out forwards;
       }
     `,
   ],
@@ -228,25 +286,14 @@ export class AvailablePlayersModalComponent {
     this.onInvite.emit(playerId);
   }
 
-  getInviteState(playerId: string): {
-    type: 'invite' | 'pending';
-    timeLeft?: string;
-  } {
-    const cooldownTime = this.inviteCooldowns.get(playerId);
-    if (!cooldownTime) {
-      return { type: 'invite' };
+  getInviteState(playerId: string) {
+    const isPending = this.pendingInvites.some(
+      (invite) => invite.to.id === playerId
+    );
+    if (isPending) {
+      return { type: 'pending', timeLeft: 15 };
     }
-
-    const timeLeft = Math.ceil((cooldownTime - Date.now()) / 1000);
-    if (timeLeft <= 0) {
-      this.inviteCooldowns.delete(playerId);
-      return { type: 'invite' };
-    }
-
-    return {
-      type: 'pending',
-      timeLeft: timeLeft.toString(),
-    };
+    return { type: 'invite' };
   }
 
   get filteredPlayers(): Player[] {

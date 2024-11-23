@@ -17,60 +17,130 @@ import { TeamCardComponent } from './team-card.component';
   standalone: true,
   imports: [CommonModule, FormsModule, TeamCardComponent],
   template: `
-    <div class="mb-8">
+    <div class="space-y-6">
+      <!-- Header Section -->
       <div
-        class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6"
+        class="flex flex-col md:flex-row md:items-center justify-between gap-4"
       >
-        <h2 class="text-xl md:text-2xl gold-gradient">
-          Available Teams ({{ filteredTeams.length }}/{{ teams.length }})
-        </h2>
+        <div class="flex items-center gap-2">
+          <h2 class="text-2xl font-bold" style="color: var(--primary)">
+            Available Teams
+          </h2>
+          <span
+            class="text-sm px-2 py-0.5 rounded-full"
+            style="background: var(--primary-light); color: var(--primary)"
+          >
+            {{ filteredTeams.length }}/{{ teams.length }}
+          </span>
+        </div>
+
+        <!-- Search Bar -->
         <div class="relative flex-1 md:max-w-md">
           <input
             type="text"
             [(ngModel)]="searchQuery"
             (ngModelChange)="onSearch($event)"
             placeholder="Search teams or players..."
-            class="w-full bg-black/50 border border-gold/30 rounded-lg px-4 py-2 text-white placeholder-gray-400 focus:border-gold focus:outline-none text-sm"
+            class="search-input"
           />
           <span
-            class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-gray-400"
+            class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2"
           >
-            search
+            {{ searchQuery ? 'close' : 'search' }}
           </span>
         </div>
       </div>
 
+      <!-- Teams Grid -->
       <div
         *ngIf="filteredTeams.length > 0; else noTeams"
-        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+        class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in"
       >
         <app-team-card
-          *ngFor="
-            let team of filteredTeams;
-            trackBy: trackByTeamId;
-            let i = index
-          "
+          *ngFor="let team of filteredTeams; trackBy: trackByTeamId; index as i"
           [team]="team"
           [showChallengeButton]="isTeamCaptain"
           (onChallenge)="onChallengeTeam.emit($event)"
+          class="animate-slide-up"
+          [style.animation-delay]="'calc(0.1s * ' + i + ')'"
         >
         </app-team-card>
       </div>
 
+      <!-- Empty State -->
       <ng-template #noTeams>
-        <div class="text-center py-8 text-gray-400">
-          <p class="mb-2">No teams available at the moment</p>
-          <p class="text-sm">Check back later or wait for new teams to join</p>
+        <div class="empty-state">
+          <span
+            class="material-symbols-outlined text-lg"
+            style="color: var(--text-primary)"
+          >
+            group_off
+          </span>
+          <p class="text-lg" style="color: var(--text-primary)">
+            No teams available at the moment
+          </p>
+          <p class="text-sm" style="color: var(--text-secondary)">
+            Check back later or wait for new teams to join
+          </p>
         </div>
       </ng-template>
     </div>
   `,
   styles: [
     `
-      .gold-gradient {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      .search-input {
+        @apply w-full px-4 py-3 rounded-lg pr-10 transition-all duration-200;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-light);
+        color: var(--text-primary);
+      }
+
+      .search-input:focus {
+        outline: none;
+        border-color: var(--primary);
+      }
+
+      .search-input::placeholder {
+        color: var(--text-muted);
+      }
+
+      .empty-state {
+        @apply text-center py-12 rounded-lg;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-light);
+      }
+
+      .empty-state i {
+        color: var(--text-muted);
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(20px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      .animate-slide-up {
+        animation: slideUp 0.5s ease-out forwards;
+        opacity: 0;
+      }
+
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      .animate-fade-in {
+        animation: fadeIn 0.3s ease-out;
       }
     `,
   ],
@@ -99,36 +169,19 @@ export class TeamListComponent implements OnInit, OnChanges {
   }
 
   private hasTeamsChanged(current: Team[], previous: Team[]): boolean {
-    if (!previous) {
-      return true;
-    }
+    if (!previous) return true;
+    if (current.length !== previous.length) return true;
 
-    if (current.length !== previous.length) {
-      return true;
-    }
-
-    const hasChanges = current.some((team, index) => {
+    return current.some((team, index) => {
       const prevTeam = previous[index];
-      if (!prevTeam) {
-        return true;
-      }
+      if (!prevTeam || team.id !== prevTeam.id) return true;
+      if (team.players.length !== prevTeam.players.length) return true;
 
-      if (team.id !== prevTeam.id) {
-        return true;
-      }
-
-      if (team.players.length !== prevTeam.players.length) {
-        return true;
-      }
-
-      const playerChanges = team.players.some((player, playerIndex) => {
+      return team.players.some((player, playerIndex) => {
         const prevPlayer = prevTeam.players[playerIndex];
-        const changed = player.id !== prevPlayer?.id;
-        return changed;
+        return player.id !== prevPlayer?.id;
       });
-      return playerChanges;
     });
-    return hasChanges;
   }
 
   private updateFilteredTeams() {
@@ -139,14 +192,13 @@ export class TeamListComponent implements OnInit, OnChanges {
 
   private filterTeams(query: string): Team[] {
     const searchTerm = query.toLowerCase();
-    const filtered = this.teams.filter(
+    return this.teams.filter(
       (team) =>
         team.name.toLowerCase().includes(searchTerm) ||
         team.players.some((player) =>
           player.username.toLowerCase().includes(searchTerm)
         )
     );
-    return filtered;
   }
 
   onSearch(query: string) {

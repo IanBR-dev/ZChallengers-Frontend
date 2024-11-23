@@ -52,12 +52,29 @@ import { MatchesService } from '../../services/matches.service';
     <!-- Loading State -->
     <div
       *ngIf="isLoading"
-      class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+      class="fixed inset-0 bg-black/90 z-[60] flex items-center justify-center"
     >
       <app-loading-state message="Loading lobby..."></app-loading-state>
     </div>
 
-    <div class="min-h-screen" style="background: var(--bg-dark)">
+    <div class="min-h-screen relative overflow-hidden">
+      <!-- Background Video/Image Container -->
+      <div class="absolute inset-0 w-full h-full z-0">
+        <video
+          class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 flip-horizontal"
+          (pause)="(true)"
+          loop
+          muted
+          playsinline
+        >
+          <source src="assets/videos/login-background.mp4" type="video/mp4" />
+        </video>
+        <div
+          class="absolute inset-0"
+          style="background: var(--bg-overlay)"
+        ></div>
+      </div>
+
       <!-- Header -->
       <app-lobby-header
         [invitations]="invitations"
@@ -65,30 +82,115 @@ import { MatchesService } from '../../services/matches.service';
         (onDeclineInvitation)="declineInvitation($event)"
         (onProfileClick)="openProfile()"
         (onLogout)="logout()"
+        class="relative z-50"
       >
       </app-lobby-header>
 
+      <!-- Main Content -->
+      <div
+        class="relative z-10 pt-24 px-4 pb-4 max-w-7xl mx-auto"
+        *ngIf="!match"
+      >
+        <!-- Quick Actions -->
+        <div class="flex justify-end mb-8">
+          <app-invite-button
+            *ngIf="!currentTeam"
+            (onClick)="showInviteModal = true"
+          >
+          </app-invite-button>
+        </div>
+
+        <!-- Current Team/Player Section -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <!-- Player/Team Info -->
+          <div class="lg:col-span-1">
+            <div class="glass rounded-lg p-6">
+              <h2 class="text-2xl font-bold mb-6" style="color: var(--primary)">
+                {{ currentTeam ? 'Your Team' : 'Solo Player' }}
+              </h2>
+
+              <ng-container *ngIf="currentTeam">
+                <div class="space-y-4">
+                  <h3 class="text-xl" style="color: var(--text-primary)">
+                    {{ currentTeam.name }}
+                  </h3>
+                  <!-- Team Players Grid -->
+                  <div class="grid grid-cols-1 gap-3">
+                    <app-player-card
+                      *ngFor="let player of currentTeam.players"
+                      [player]="player"
+                      [currentPlayer]="currentPlayer"
+                      [isCaptain]="player.id === currentTeam.captain.id"
+                    >
+                    </app-player-card>
+                  </div>
+                  <button
+                    class="primary-button w-full mt-4"
+                    (click)="leaveTeam()"
+                  >
+                    Leave Team
+                  </button>
+                </div>
+              </ng-container>
+
+              <ng-container *ngIf="!currentTeam && currentPlayer">
+                <app-player-card [player]="currentPlayer" class="mb-6">
+                </app-player-card>
+                <app-queue
+                  *ngIf="!currentTeam"
+                  (teamFounded)="teamFounded($event)"
+                ></app-queue>
+              </ng-container>
+            </div>
+          </div>
+
+          <!-- Available Teams -->
+          <div class="lg:col-span-2" *ngIf="currentTeam">
+            <div
+              class="glass rounded-lg p-6 h-full overflow-auto max-h-[calc(100vh-200px)]"
+            >
+              <app-team-list
+                [teams]="availableTeams"
+                [isTeamCaptain]="isTeamCaptain"
+                (onChallengeTeam)="openChallengeModal($event)"
+              >
+              </app-team-list>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div
+        class="relative z-10 pt-24 px-4 pb-4 max-w-7xl mx-auto"
+        *ngIf="match"
+      >
+        <app-match-status
+          *ngIf="match.team1 && match.team2"
+          [team1]="match.team1"
+          [team2]="match.team2"
+        >
+        </app-match-status>
+      </div>
       <!-- Modals -->
       <app-team-found-animation
         *ngIf="teamFound"
         [team]="teamFound"
         [isInvitation]="false"
         (onContinue)="closeModalTeamFound()"
-        class="z-50"
+        class="z-[70]"
       >
       </app-team-found-animation>
 
       <app-team-challenge
-        *ngIf="showChallenge"
+        *ngIf="showChallenge && challengingTeam && challengedTeam"
         [challengingTeam]="challengingTeam"
         [challengedTeam]="challengedTeam"
         [isChallenger]="isChallenger"
         (closeChallengeModal)="closeChallengeModal()"
-        class="z-50"
+        class="z-[70]"
       >
       </app-team-challenge>
 
-      <!-- Vote Modal -->
       <app-vote-modal
         *ngIf="showVoting"
         [opposingTeam]="lastOpposingTeam!"
@@ -101,96 +203,26 @@ import { MatchesService } from '../../services/matches.service';
         [currentPlayer]="currentPlayer"
         (onVoteSubmit)="handleVoteSubmit($event)"
         (onVotingComplete)="handleVotingComplete()"
+        class="z-[70]"
       >
       </app-vote-modal>
 
-      <!-- Main Content -->
-      <div class="pt-24 px-4 pb-4" *ngIf="!match">
-        <div class="max-w-7xl mx-auto">
-          <div class="mt-4 mb-8 ml-auto w-full flex items-center justify-end">
-            <app-invite-button
-              *ngIf="!currentTeam"
-              (onClick)="showInviteModal = true"
-            >
-            </app-invite-button>
-          </div>
-
-          <!-- Current Team/Player Info -->
-          <div class="glass rounded-lg p-4 md:p-6 mb-8">
-            <h2 class="text-xl md:text-2xl blue-gradient mb-4">
-              {{ currentTeam ? 'Your Team' : 'Solo Player' }}
-            </h2>
-
-            <ng-container *ngIf="currentTeam">
-              <div class="mb-4">
-                <h3
-                  class="text-lg md:text-xl mb-2"
-                  style="color: var(--text-primary)"
-                >
-                  {{ currentTeam.name }}
-                </h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <app-player-card
-                    *ngFor="let player of currentTeam.players"
-                    [player]="player"
-                    [currentPlayer]="currentPlayer"
-                    [isCaptain]="player.id === currentTeam.captain.id"
-                  >
-                  </app-player-card>
-                </div>
-              </div>
-              <button class="primary-button" (click)="leaveTeam()">
-                Leave Team
-              </button>
-            </ng-container>
-
-            <ng-container *ngIf="!currentTeam && currentPlayer">
-              <app-player-card [player]="currentPlayer" class="mb-6">
-              </app-player-card>
-              <app-queue
-                *ngIf="!currentTeam"
-                (teamFounded)="teamFounded($event)"
-              ></app-queue>
-            </ng-container>
-          </div>
-
-          <!-- Available Teams -->
-          <app-team-list
-            *ngIf="currentTeam"
-            [teams]="availableTeams"
-            [isTeamCaptain]="isTeamCaptain"
-            (onChallengeTeam)="openChallengeModal($event)"
-          >
-          </app-team-list>
-        </div>
-      </div>
-
-      <!-- Available Players Modal -->
       <app-available-players-modal
         *ngIf="showInviteModal"
         [players]="availablePlayers"
         [pendingInvites]="invitations"
         (onInvite)="invitePlayer($event)"
         (onClose)="showInviteModal = false"
+        class="z-[70]"
       >
       </app-available-players-modal>
 
-      <!-- Match Status -->
-      <app-match-status
-        *ngIf="match"
-        [team1]="match.team1"
-        [team2]="match.team2"
-        class="z-30"
-      >
-      </app-match-status>
-
-      <!-- Challenge Modal -->
       <app-challenge-modal
         *ngIf="selectedTeam"
         [team]="selectedTeam"
         (confirm)="confirmChallenge($event)"
         (cancel)="cancelChallenge()"
-        class="z-50"
+        class="z-[70]"
       >
       </app-challenge-modal>
     </div>
@@ -201,9 +233,19 @@ import { MatchesService } from '../../services/matches.service';
         display: block;
       }
 
+      .flip-horizontal {
+        transform: scaleX(-1);
+      }
+
+      .glass {
+        background: var(--bg-glass);
+        backdrop-filter: blur(16px) saturate(180%);
+        border: 1px solid var(--border-light);
+      }
+
       .primary-button {
         @apply px-6 py-3 rounded font-semibold relative overflow-hidden;
-        background: linear-gradient(45deg, var(--dark-blue), var(--blue));
+        background: var(--primary);
         color: var(--text-primary);
         transition: all 0.3s ease;
       }
@@ -215,6 +257,17 @@ import { MatchesService } from '../../services/matches.service';
 
       .primary-button:active {
         transform: translateY(0);
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(100%);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
       }
     `,
   ],
@@ -236,10 +289,10 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
   // Match States
   match: Match | null = null;
-  challengingTeam: Team | null = null;
-  challengedTeam: Team | null = null;
+  challengingTeam: Team | null | undefined = null;
+  challengedTeam: Team | null | undefined = null;
   isChallenger = false;
-  lastOpposingTeam: Team | null = null;
+  lastOpposingTeam: Team | null | undefined = null;
   currentVotes: Vote[] = [];
   canVote = false;
   myVote: Vote | undefined = undefined;
@@ -461,7 +514,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     const myTeam = this.currentTeam?.id;
     this.challengingTeam = match.team1;
     this.challengedTeam = match.team2;
-    this.isChallenger = myTeam === match.team1.id;
+    this.isChallenger = myTeam === match.team1?.id;
     this.showChallenge = true;
     setTimeout(() => {
       this.match = match;
@@ -473,8 +526,8 @@ export class LobbyComponent implements OnInit, OnDestroy {
       const team1 = match.team1;
       const team2 = match.team2;
       const winnerTeamId = match.winner.id;
-      const loserTeam = winnerTeamId === team1.id ? team2 : team1;
-      const winnerTeam = winnerTeamId === team1.id ? team1 : team2;
+      const loserTeam = winnerTeamId === team1?.id ? team2 : team1;
+      const winnerTeam = winnerTeamId === team1?.id ? team1 : team2;
 
       // Actualizar estado de votación
       this.canVote = winnerTeamId === this.currentTeam?.id;
@@ -496,7 +549,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
 
       // Verificar si la votación está completa
       const totalVotes = this.currentVotes.length;
-      const requiredVotes = winnerTeam.players.length;
+      const requiredVotes = winnerTeam?.players.length;
 
       if (totalVotes === requiredVotes) {
         this.isVotingComplete = true;
@@ -508,7 +561,7 @@ export class LobbyComponent implements OnInit, OnDestroy {
     // Actualizar estado del equipo
     const teams = [match.team1, match.team2];
     this.currentTeam = teams.find((team) =>
-      team.players.some((player) => player.id === this.currentPlayer.id)
+      team?.players.some((player) => player.id === this.currentPlayer.id)
     );
 
     // agregar jugador mas votado a match
@@ -709,8 +762,9 @@ export class LobbyComponent implements OnInit, OnDestroy {
   private handleNewMatch(match: Match) {
     const myTeam = this.currentTeam?.id;
     this.challengingTeam =
-      match.team1.id === myTeam ? match.team2 : match.team1;
-    this.challengedTeam = match.team1.id !== myTeam ? match.team1 : match.team2;
+      match.team1?.id === myTeam ? match.team2 : match.team1;
+    this.challengedTeam =
+      match.team1?.id !== myTeam ? match.team1 : match.team2;
     this.isChallenger = true;
     this.showChallenge = true;
     setTimeout(() => {

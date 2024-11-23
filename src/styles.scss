@@ -46,17 +46,18 @@
   --playstation: #003791;
 }
 
+@layer components {
+  .glass {
+    @apply backdrop-blur-md;
+    background: var(--bg-glass);
+    border: 1px solid var(--border-light);
+  }
+}
+
 /* Base Styles */
 body {
   @apply bg-black text-white m-0 p-0;
   font-family: "Rajdhani", sans-serif;
-}
-
-/* Glass Effect */
-.glass {
-  background: var(--bg-glass);
-  backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid var(--border-light);
 }
 
 /* Gradient Effects */

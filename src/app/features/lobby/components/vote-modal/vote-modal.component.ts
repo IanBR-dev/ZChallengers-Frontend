@@ -16,58 +16,41 @@ import { Player, Team, Vote } from '../../../../models/types';
   standalone: true,
   imports: [CommonModule],
   template: `
-    <div
-      class="fixed inset-0 bg-black/90 backdrop-blur-sm z-50 flex items-center justify-center"
-    >
+    <div class="fixed inset-0 z-[70] flex items-center justify-center">
+      <!-- Backdrop with blur -->
+      <div class="absolute inset-0" style="background: var(--bg-overlay)"></div>
+
+      <!-- Modal Container -->
       <div class="max-w-lg w-full mx-4 relative">
-        <!-- Animación de partículas doradas -->
+        <!-- Particle Effects -->
         <div class="absolute inset-0 overflow-hidden">
           <div
             *ngFor="let i of [1, 2, 3, 4, 5]"
-            class="particle absolute w-2 h-2 bg-gold rounded-full"
+            class="particle absolute w-2 h-2 rounded-full"
+            [style.background]="'var(--primary)'"
             [style.animation-delay]="i * 0.2 + 's'"
           ></div>
         </div>
 
-        <!-- Contenido principal -->
-        <div
-          class="bg-black/80 border border-gold/30 rounded-lg p-6 text-center animate-scale-in"
-        >
-          <div class="relative">
-            <!-- Círculo animado -->
+        <!-- Main Content -->
+        <div class="glass rounded-lg p-8 text-center animate-scale-in">
+          <!-- Animated Circles -->
+          <div class="relative mb-8">
             <div class="absolute inset-0 flex items-center justify-center">
-              <div
-                class="w-32 h-32 rounded-full border-4 border-gold/30 animate-pulse"
-              ></div>
-              <div
-                class="absolute w-36 h-36 rounded-full border-2 border-gold/20 animate-spin-slow"
-              ></div>
+              <div class="circle-outer"></div>
+              <div class="circle-inner"></div>
             </div>
 
-            <!-- Icono central -->
-            <div class="relative z-10 mb-6 transform animate-bounce-in">
-              <span
-                class="material-symbols-outlined text-6xl mb-4"
-                [class.text-gold]="
-                  currentTeam && currentTeam.id !== opposingTeam.id
-                "
-                [class.text-red-500]="
-                  !currentTeam || currentTeam.id === opposingTeam.id
-                "
-              >
-                {{ getIcon() }}
-              </span>
-              <h2
-                class="text-2xl font-bold mb-2"
-                [class.gold-gradient]="currentTeam"
-                [class.text-red-500]="!currentTeam"
-              >
+            <!-- Icon and Title -->
+            <div class="relative z-10 transform animate-bounce-in">
+              <i
+                [class]="'fas fa-' + getIcon() + ' text-6xl mb-4'"
+                [style.color]="'var(--primary)'"
+              ></i>
+              <h2 class="text-2xl font-bold mb-2" style="color: var(--primary)">
                 {{ getTitle() }}
               </h2>
-              <p
-                class="text-gray-700 font-medium"
-                *ngIf="currentTeam && currentTeam.id !== opposingTeam.id"
-              >
+              <p style="color: var(--text-secondary)">
                 {{ getStatusText() }}
               </p>
             </div>
@@ -78,116 +61,94 @@ import { Player, Team, Vote } from '../../../../models/types';
             <div class="grid grid-cols-2 gap-4">
               <div
                 *ngFor="let player of opposingTeam.players"
-                class="relative bg-black/30 p-4 rounded-lg border transition-all duration-300"
-                [class.border-selected]="
-                  canVote && selectedPlayer?.id === player.id
-                "
-                [class.border-unselected]="
-                  canVote && selectedPlayer?.id !== player.id
-                "
-                [class.border-inactive]="!canVote"
-                [class.hover-border]="canVote && !hasVoted"
-                [class.cursor-pointer]="canVote && !hasVoted"
-                [class.transform]="canVote && selectedPlayer?.id === player.id"
-                [class.hover:scale-105]="canVote && !hasVoted"
+                class="player-card"
+                [class.selectable]="canVote && !hasVoted"
+                [class.selected]="selectedPlayer?.id === player.id"
                 (click)="canVote && !hasVoted ? selectPlayer(player) : null"
               >
-                <!-- Overlay de selección -->
-                <div
-                  *ngIf="canVote && selectedPlayer?.id === player.id"
-                  class="absolute inset-0 bg-gold/10 rounded-lg animate-pulse-slow"
-                ></div>
-
-                <div class="relative z-10">
+                <!-- Player Content -->
+                <div class="relative">
+                  <!-- Avatar -->
                   <div class="relative mb-3">
                     <img
                       [src]="player.avatar"
                       [alt]="player.username"
-                      class="w-16 h-16 rounded-full mx-auto object-cover"
+                      class="w-16 h-16 rounded-lg mx-auto object-cover"
                     />
-
-                    <!-- Indicador de votos -->
-                    <div
-                      *ngIf="getVoteCount(player) > 0"
-                      class="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-gold/20 
-                                flex items-center justify-center text-sm text-gold animate-bounce-in"
-                    >
+                    <!-- Vote Count Badge -->
+                    <div *ngIf="getVoteCount(player) > 0" class="vote-badge">
                       {{ getVoteCount(player) }}
                     </div>
                   </div>
 
-                  <div class="font-medium">{{ player.username }}</div>
-                  <div class="text-sm text-gold">{{ player.rank }}</div>
+                  <!-- Player Info -->
+                  <div class="player-info">
+                    <div class="player-name">{{ player.username }}</div>
+                    <div class="player-rank">{{ player.rank }}</div>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
 
-          <!-- Resultado Final -->
+          <!-- Results View -->
           <div *ngIf="showingResults" class="mt-8 space-y-6 animate-slide-up">
-            <div
-              class="relative"
-              *ngIf="currentTeam && currentTeam.id !== opposingTeam.id"
-            >
-              <img
-                [src]="mostVotedPlayer?.avatar"
-                class="w-24 h-24 rounded-full mx-auto border-4 border-gold animate-winner-glow"
-              />
-              <div class="absolute -top-4 -right-4 transform rotate-12">
-                <span
-                  class="material-symbols-outlined text-4xl text-gold animate-bounce"
-                >
-                  military_tech
-                </span>
+            <!-- Winner Avatar -->
+            <div class="relative" *ngIf="mostVotedPlayer">
+              <div class="winner-avatar">
+                <img
+                  [src]="mostVotedPlayer.avatar"
+                  [alt]="mostVotedPlayer.username"
+                  class="w-24 h-24 rounded-lg mx-auto object-cover"
+                />
+                <div class="winner-crown">
+                  <span class="material-symbols-outlined text-xs">
+                    military_tech
+                  </span>
+                </div>
               </div>
             </div>
 
-            <div>
-              <h3
-                class="text-2xl font-bold gold-gradient mb-2"
-                *ngIf="currentTeam && currentTeam.id !== opposingTeam.id"
-              >
+            <!-- Winner Info -->
+            <div class="winner-info">
+              <h3 class="text-2xl font-bold mb-2" style="color: var(--primary)">
                 {{ mostVotedPlayer?.username }}
               </h3>
-              <p class="text-gold text-lg mb-1">
-                {{ isComplete ? getBodyText() : 'Most Valuable Player!' }}
+              <p style="color: var(--text-primary)">
+                {{ getBodyText() }}
               </p>
-              <p class="text-gray-400">
-                {{
-                  isComplete
-                    ? getFooterText()
-                    : 'Received ' + getVoteCount(getWinningPlayer()) + ' votes'
-                }}
+              <p style="color: var(--text-secondary)">
+                {{ getFooterText() }}
               </p>
             </div>
 
+            <!-- Continue Button -->
             <button
               *ngIf="isComplete"
               (click)="onVotingComplete.emit()"
-              class="mt-4 gold-button px-8 py-2 text-lg animate-fade-in hover:scale-105 
-                     active:scale-95 transition-all duration-200"
+              class="continue-button"
             >
               Continue
             </button>
           </div>
 
-          <!-- Botón de Votación -->
+          <!-- Vote Button -->
           <button
             *ngIf="canVote && !hasVoted"
             (click)="submitVote()"
-            class="mt-8 gold-button px-8 py-2 text-lg animate-fade-in"
-            [class.opacity-50]="!selectedPlayer"
+            class="vote-button"
+            [class.disabled]="!selectedPlayer"
             [disabled]="!selectedPlayer"
           >
             Cast Your Vote
           </button>
 
-          <!-- Estado de Espera -->
-          <div *ngIf="hasVoted && !showingResults" class="mt-8 animate-pulse">
-            <span class="material-symbols-outlined text-2xl text-gold"
-              >pending</span
-            >
-            <p class="text-gray-400 mt-2">Waiting for other votes...</p>
+          <!-- Waiting State -->
+          <div *ngIf="hasVoted && !showingResults" class="waiting-state">
+            <span class="material-symbols-outlined">sync</span>
+            <p style="color: var(--text-secondary)">
+              Waiting for other votes...
+            </p>
           </div>
         </div>
       </div>
@@ -195,117 +156,129 @@ import { Player, Team, Vote } from '../../../../models/types';
   `,
   styles: [
     `
-      .gold-gradient {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
+      .circle-outer {
+        @apply w-36 h-36 rounded-full absolute;
+        border: 2px solid var(--primary);
+        opacity: 0.3;
+        animation: spin 8s linear infinite;
       }
 
-      .gold-button {
-        background: linear-gradient(to right, #ffd700, #b8860b);
-        color: black;
-        font-weight: 500;
-        border-radius: 0.5rem;
+      .circle-inner {
+        @apply w-32 h-32 rounded-full absolute;
+        border: 4px solid var(--primary);
+        opacity: 0.2;
+        animation: pulse 2s ease-in-out infinite;
       }
 
-      .gold-button:hover:not(:disabled) {
-        transform: scale(1.02);
+      .player-card {
+        @apply p-4 rounded-lg transition-all duration-200;
+        background: var(--bg-dark);
+        border: 1px solid var(--border-light);
+      }
+
+      .player-card.selectable {
+        @apply cursor-pointer;
+      }
+
+      .player-card.selectable:hover {
+        border-color: var(--primary);
+        transform: translateY(-1px);
+      }
+
+      .player-card.selected {
+        background: var(--primary-light);
+        border-color: var(--primary);
+      }
+
+      .vote-badge {
+        @apply absolute -top-2 -right-2 w-6 h-6 rounded-full flex items-center justify-center text-sm;
+        background: var(--primary);
+        color: var(--text-primary);
+        animation: bounce 1s infinite;
+      }
+
+      .player-name {
+        @apply font-medium;
+        color: var(--text-primary);
+      }
+
+      .player-rank {
+        @apply text-sm;
+        color: var(--text-secondary);
+      }
+
+      .winner-avatar {
+        @apply relative inline-block;
+      }
+
+      .winner-avatar img {
+        border: 4px solid var(--primary);
+        animation: winner-glow 2s infinite;
+      }
+
+      .winner-crown {
+        @apply absolute -top-4 -right-4 text-2xl transform rotate-12;
+        color: var(--primary);
+        animation: bounce 2s infinite;
+      }
+
+      .vote-button,
+      .continue-button {
+        @apply px-8 py-3 rounded-lg font-medium transition-all duration-200;
+        background: var(--primary);
+        color: var(--text-primary);
+      }
+
+      .vote-button:hover:not(.disabled),
+      .continue-button:hover {
         filter: brightness(1.1);
+        transform: translateY(-1px);
       }
 
-      .gold-button:active:not(:disabled) {
-        transform: scale(0.98);
+      .vote-button.disabled {
+        @apply opacity-50 cursor-not-allowed;
       }
 
-      .border-selected {
-        border-color: var(--color-gold);
+      .waiting-state {
+        @apply mt-8 space-y-2;
+        color: var(--primary);
       }
 
-      .border-unselected {
-        border-color: rgba(255, 215, 0, 0.1);
+      .particle {
+        --tx: 0px;
+        --ty: 0px;
+        animation: particle-float 2s ease-out infinite;
+        opacity: 0;
       }
 
-      .border-inactive {
-        border-color: rgba(255, 215, 0, 0.3);
+      .particle:nth-child(1) {
+        --tx: 100px;
+        --ty: -100px;
       }
-
-      .hover-border:hover {
-        border-color: rgba(255, 215, 0, 0.5);
+      .particle:nth-child(2) {
+        --tx: -80px;
+        --ty: -120px;
+      }
+      .particle:nth-child(3) {
+        --tx: 120px;
+        --ty: 80px;
+      }
+      .particle:nth-child(4) {
+        --tx: -100px;
+        --ty: 90px;
+      }
+      .particle:nth-child(5) {
+        --tx: 90px;
+        --ty: 110px;
       }
 
       @keyframes winner-glow {
         0%,
         100% {
-          box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+          box-shadow: 0 0 20px var(--primary-light);
         }
         50% {
-          box-shadow: 0 0 40px rgba(255, 215, 0, 0.8);
-        }
-      }
-
-      .animate-winner-glow {
-        animation: winner-glow 2s ease-in-out infinite;
-      }
-
-      @keyframes pulse-slow {
-        0%,
-        100% {
-          opacity: 0.1;
-        }
-        50% {
-          opacity: 0.3;
-        }
-      }
-
-      .animate-pulse-slow {
-        animation: pulse-slow 2s ease-in-out infinite;
-      }
-
-      @keyframes scale-in {
-        0% {
-          transform: scale(0.8);
-          opacity: 0;
-        }
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      @keyframes bounce-in {
-        0% {
-          transform: scale(0.3);
-          opacity: 0;
-        }
-        50% {
-          transform: scale(1.1);
-        }
-        70% {
-          transform: scale(0.9);
-        }
-        100% {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
-
-      @keyframes slide-up {
-        0% {
-          transform: translateY(20px);
-          opacity: 0;
-        }
-        100% {
-          transform: translateY(0);
-          opacity: 1;
-        }
-      }
-
-      @keyframes fade-in {
-        0% {
-          opacity: 0;
-        }
-        100% {
-          opacity: 1;
+          box-shadow: 0 0 40px var(--primary);
         }
       }
 
@@ -338,42 +311,43 @@ import { Player, Team, Vote } from '../../../../models/types';
         animation-fill-mode: forwards;
       }
 
-      .animate-fade-in {
-        animation: fade-in 0.5s ease-out;
-        animation-fill-mode: forwards;
-        opacity: 0;
+      @keyframes scale-in {
+        from {
+          transform: scale(0.8);
+          opacity: 0;
+        }
+        to {
+          transform: scale(1);
+          opacity: 1;
+        }
       }
 
-      .particle {
-        --tx: 0px;
-        --ty: 0px;
-        animation: particle-float 2s ease-out infinite;
-        opacity: 0;
+      @keyframes bounce-in {
+        0% {
+          transform: scale(0.3);
+          opacity: 0;
+        }
+        50% {
+          transform: scale(1.1);
+        }
+        70% {
+          transform: scale(0.9);
+        }
+        100% {
+          transform: scale(1);
+          opacity: 1;
+        }
       }
 
-      .particle:nth-child(1) {
-        --tx: 100px;
-        --ty: -100px;
-      }
-      .particle:nth-child(2) {
-        --tx: -80px;
-        --ty: -120px;
-      }
-      .particle:nth-child(3) {
-        --tx: 120px;
-        --ty: 80px;
-      }
-      .particle:nth-child(4) {
-        --tx: -100px;
-        --ty: 90px;
-      }
-      .particle:nth-child(5) {
-        --tx: 90px;
-        --ty: 110px;
-      }
-
-      :host {
-        --color-gold: #ffd700;
+      @keyframes slide-up {
+        from {
+          transform: translateY(20px);
+          opacity: 0;
+        }
+        to {
+          transform: translateY(0);
+          opacity: 1;
+        }
       }
     `,
   ],
