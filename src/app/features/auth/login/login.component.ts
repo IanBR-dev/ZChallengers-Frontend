@@ -26,7 +26,7 @@ import { AuthService } from '../services/auth.service';
         </video>
         <img
           *ngIf="!showVideo"
-          src="assets/images/login-background.jpg"
+          src="assets/images/login-background.png"
           class="absolute inset-0 w-full h-full object-cover transition-opacity duration-500 flip-horizontal"
           alt="background"
         />
@@ -151,7 +151,7 @@ import { AuthService } from '../services/auth.service';
         title="{{ showVideo ? 'Desactivar video' : 'Activar video' }}"
       >
         <span class="material-symbols-outlined text-xl">
-          {{ showVideo ? 'video_off' : 'video' }}
+          {{ showVideo ? 'videocam_off' : 'videocam' }}
         </span>
       </button>
     </div>
